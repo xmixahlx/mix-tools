@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-alsa-tinycompress
-### Version: v20240811.2300
+### Version: v0.20250503.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -75,7 +75,9 @@ git submodule update --init --recursive --depth=1
 
 ## CONFIGURE
 autoreconf -vifs
-./configure --prefix=$DESTDIR --localstatedir=$LOCALSTATEDIR --sysconfdir=$SYSCONFDIR --libdir=$DESTDIR/lib/$MULTILIBDIR
+./configure --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR \
+--localstatedir=$LOCALSTATEDIR --sysconfdir=$SYSCONFDIR \
+--enable-fcplay --enable-pcm
 
 ## BUILD
 make -j `nproc`

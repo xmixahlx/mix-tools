@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-wireplumber
-### Version: v20210824.2300
+### Version: v0.20250503.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: pipewire
@@ -21,8 +21,9 @@ fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
 # GITBRANCH
+# Upstream branch is "master"
 if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+ GITBRANCH=0.4
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
@@ -60,9 +61,8 @@ git submodule update --init --recursive --depth=1
 rm -Rf tmpbuild
 
 ## CONFIGURE
-#meson tmpbuild --prefix=/usr/local --libdir=/usr/local/lib/x86_64-linux-gnu --buildtype=release
-meson tmpbuild --prefix=/usr --libdir=/usr/lib/x86_64-linux-gnu --buildtype=release \
--Dsystem-lua=true
+meson setup tmpbuild --prefix=/usr --libdir=/usr/lib/x86_64-linux-gnu --buildtype=release \
+-Dsystem-lua=true -Ddoc=disabled
 
 ## BUILD
 ninja -C tmpbuild

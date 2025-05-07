@@ -1,0 +1,154 @@
+#! /bin/bash
+
+### File: mix-tools-environment
+### Version: v20250120.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### ENVIRONMENT OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ export MIXTOOLSDIR="`pwd`"
+ export PATH="$MIXTOOLSDIR:$PATH"
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+## CC
+if [ -z "$CC" ]; then
+ CC="ccache gcc"
+ export CC="$CC"
+fi
+echo "*** CC selected is $CC."
+
+## CXX
+if [ -z "$CXX" ]; then
+ CXX="ccache g++"
+ export CXX="$CXX"
+fi
+echo "*** CXX selected is $CXX."
+
+## CPP
+if [ -z "$CPP" ]; then
+ CPP="ccache g++ -E"
+ export CPP="$CXX"
+fi
+echo "*** CPP selected is $CPP."
+
+## CFLAGS
+if [ -z "$CFLAGS" ]; then
+ CFLAGS="-O3 -march=native -mcpu=native -flto -fuse-ld=mold"
+ export CFLAGS="$CFLAGS"
+fi
+echo "*** CFLAGS selected is $CFLAGS."
+
+## CXXFLAGS
+if [ -z "$CXXFLAGS" ]; then
+ CXXFLAGS="$CFLAGS"
+ export CXXFLAGS="$CXXFLAGS"
+fi
+echo "*** CXXFLAGS selected is $CXXFLAGS."
+
+## CPPFLAGS
+if [ -z "$CPPFLAGS" ]; then
+ CXXFLAGS="$CFLAGS"
+ export CPPFLAGS="$CPPFLAGS"
+fi
+echo "*** CPPFLAGS selected is $CPPFLAGS."
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+## DATE
+if [ -z "$DATE" ]; then
+ DATE="`date +%Y%m%d%H%M%S`"
+fi
+echo "*** DATE selected is $DATE."
+
+## RESDIR
+if [ -z "$RESDIR" ]; then
+ RESDIR="$MIXTOOLSDIR/resources"
+fi
+echo "*** RESDIR selected is $RESDIR."
+
+## DEVDIR
+if [ -z "$DEVDIR" ]; then
+ DEVDIR="$MIXTOOLSDIR/upstream"
+fi
+echo "*** DEVDIR selected is $DEVDIR."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+## LOCALSTATEDIR
+if [ -z "$LOCALSTATEDIR" ]; then
+ LOCALSTATEDIR="/usr/local/var"
+fi
+echo "*** LOCALSTATEDIR selected is $LOCALSTATEDIR."
+
+## SYSCONFDIR
+if [ -z "$SYSCONFDIR" ]; then
+ SYSCONFDIR="/usr/local/etc"
+fi
+echo "*** SYSCONFDIR selected is $SYSCONFDIR."
+
+## MULTILIBDIR
+if [ -z "$MULTILIBDIR" ]; then
+ MULTILIBDIR="`gcc -dumpmachine`"
+fi
+echo "*** MULTILIBDIR selected is $MULTILIBDIR."
+
+## GITBRANCH
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## GITREPO
+echo "*** GITREPO selected is $GITREPO."
+
+## GITTREE
+echo "*** GITTREE selected is $GITTREE."
+
+## GITURL
+if [ -z "$GITURL" ]; then
+ GITURL="https://github.com"
+fi
+echo "*** GITURL selected is $GITURL."
+
+## GITPRURL
+if [ -z "$GITPRURL" ]; then
+ GITPRURL="https://patch-diff.githubusercontent.com"
+fi
+echo "*** GITPRURL selected is $GITPRURL."
+
+## GITPRPATCH
+if [ -z "$GITPRPATCH" ]; then
+ GITPRPATCH="$GITPRURL/raw/$GITREPO/$GITTREE/pull/$GITPR.patch"
+fi
+echo "*** GITPRPATCH selected is $GITPRPATCH."
+
+## PKGDIR
+if [ -z "$PKGDIR" ]; then
+ PKGDIR="$GITTREE"-"$GITBRANCH"
+fi
+echo "*** PKGDIR selected is $PKGDIR."

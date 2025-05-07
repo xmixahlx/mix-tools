@@ -1,0 +1,76 @@
+#!/bin/sh
+
+### Package: mix-install-amf
+### Version: v0.20250120.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="gpuopen-librariesandsdks"
+GITTREE="amf"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+### RUN
+
+## INSTALLDEPS
+# Debian
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$TMPDIR/$PKGDIR"
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## GIT
+# depth=1
+[ -d "$PKGDIR" ] || git clone --depth=1 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## INSTALL
+sudo cp -R amf/public/include "$DESTDIR/AMF"
+
+## EXIT
+exit
+
+## ENJOY

@@ -1,0 +1,117 @@
+#!/bin/sh
+
+### Package: mix-install-zluda
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+## GITBRANCH
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## GITPR
+if [ -z "$GITPR" ]; then
+ GITPR="none"
+fi
+echo "*** GITPR selected is $GITPR."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## VARS
+DEVDIR="$MIXTOOLSDIR/upstream"
+RESDIR="$MIXTOOLSDIR/resources"
+GITURL="https://github.com"
+GITREPO=vosen
+GITTREE=zluda
+PKGDIR="$GITTREE-$GITBRANCH"
+GITPRURL="$GITURL"
+GITPRPATCH="$GITPRURL/$GITREPO/$GITTREE/-/merge_requests/$GITPR.patch"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+### INSTALLDEPS
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --recursive --depth=100
+
+### GITPR
+if [ "$GITPR" != "none" ]; then
+ rm -f "$DEVDIR/$GITTREE-$GITPR.patch"
+ wget "$GITPRPATCH" -O "$DEVDIR/$GITTREE-$GITPR.patch"
+ patch -p1 < "$DEVDIR/$GITTREE-$GITPR.patch"
+fi
+
+## CLEAN tmpinstall
+rm -Rf ""$TMPDIR/$PKGDIR"/tmpinstall/*"
+
+## UPDATE
+cargo update --verbose
+
+## BUILD & TMPINSTALL
+# note: --all-targets broken due to zluda_dump error
+cargo build --all-features --release --ignore-rust-version
+
+## INSTALL
+sudo install -D -m 644 target/release/libnvcuda.so $DESTDIR/lib/$MULTILIBDIR/libnvcuda.so
+sudo install -D -m 644 target/release/libnvml.so $DESTDIR/lib/$MULTILIBDIR/libnvml.so
+# libcuda.so
+if [ ! -f "$DESTDIR/lib/$MULTILIBDIR/libcuda.so" ]; then
+ ln -s $DESTDIR/lib/$MULTILIBDIR/libnvcuda.so $DESTDIR/lib/$MULTILIBDIR/libcuda.so
+fi
+# libcuda.so.1
+if [ ! -f "$DESTDIR/lib/$MULTILIBDIR/libcuda.so.1" ]; then
+ ln -s $DESTDIR/lib/$MULTILIBDIR/libnvcuda.so $DESTDIR/lib/$MULTILIBDIR/libcuda.so.1
+fi
+# libnvidia-ml.so
+if [ ! -f "$DESTDIR/lib/$MULTILIBDIR/libnvidia-ml.so" ]; then
+ ln -s $DESTDIR/lib/$MULTILIBDIR/libnvml.so $DESTDIR/lib/$MULTILIBDIR/libnvidia-ml.so
+fi
+# libnvidia-ml.so.1
+if [ ! -f "$DESTDIR/lib/$MULTILIBDIR/libnvidia-ml.so.1" ]; then
+ ln -s $DESTDIR/lib/$MULTILIBDIR/libnvml.so $DESTDIR/lib/$MULTILIBDIR/libnvidia-ml.so.1
+fi
+sudo ldconfig
+
+## EXIT
+exit
+
+# ENJOY

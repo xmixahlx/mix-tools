@@ -28,7 +28,7 @@ echo "*** DESTDIR selected is $DESTDIR."
 
 # PKGVER
 if [ -z $PKGVER ]; then
- PKGVER=6.12-rc6
+ PKGVER=upstream
 fi
 echo "*** PKGVER selected is $PKGVER."
 

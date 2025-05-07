@@ -1,7 +1,7 @@
 #! /bin/sh
 
 ### Package: mix-install-task-alsa
-### Version: v20241101.2300
+### Version: v0.20250503.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -18,10 +18,12 @@ echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 # NOTE: Default install location is usr/system. See fake-debian for management:
 # https://github.com/xmixahlx/fake-debian
 mix-install-alsa-lib
+mix-install-alsa-plugins
 mix-install-alsa-utils
 mix-install-alsa-ucm-conf
 mix-install-alsa-tinycompress
 mix-install-alsa-utils
+mix-install-alsa-python
 mix-install-alsa-oss
 
 ## EXIT

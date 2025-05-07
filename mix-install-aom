@@ -1,0 +1,129 @@
+#!/bin/sh
+
+### Package: mix-install-aom
+### Version: v0.20250120.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: dovi hdr10plus
+
+### VARIABLES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+# upstream branch is "master"
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+## EXAMPLES
+# options are off or on
+if [ -z "$EXAMPLES" ]; then
+ EXAMPLES="1"
+fi
+echo "*** EXAMPLES selected is $EXAMPLES."
+
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://aomedia.googlesource.com"
+GITREPO="aom"
+GITTREE="aom"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+### RUN
+
+### INSTALLDEPS
+# Debian
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y build-dep svt-av1
+ sudo apt-get -y install build-essential coreutils libc-bin git cmake
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## CLEAN
+rm -Rf "$TMPDIR/$PKGDIR/tmpbuild"
+rm -Rf tmpbuild
+
+## CONFIGURE
+cmake -B "$TMPDIR/$PKGDIR/tmpbuild" -G Ninja \
+-DCMAKE_INSTALL_PREFIX="$DESTDIR" -DCMAKE_BUILD_TYPE="$BUILDTYPE" \
+-DCMAKE_INSTALL_LIBDIR="$DESTDIR/lib/$MULTILIBDIR" \
+-DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_SHARED_LIBS=1 \
+-DFORCE_HIGHBITDEPTH_DECODING=1 -DCONFIG_LIBYUV=1 \
+-DCONFIG_MULTITHREAD=1 -DCONFIG_TUNE_VMAF=1 -DENABLE_EXAMPLES="$EXAMPLES" \
+-DENABLE_TESTS=1 -DENABLE_TOOLS=1
+
+## BUILD
+ninja -C "$TMPDIR/$PKGDIR/tmpbuild"
+
+## INSTALL
+sudo ninja -C "$TMPDIR/$PKGDIR/tmpbuild" install
+# EXAMPLES
+if [ "$EXAMPLES" = "1" ]; then
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/test_libaom" "$DESTDIR/bin/aom_test_libaom"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/lightfield_bitstream_parsing" "$DESTDIR/bin/aom_lightfield_bitstream_parsing"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/lightfield_tile_list_decoder" "$DESTDIR/bin/aom_lightfield_tile_list_decoder"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/lightfield_encoder" "$DESTDIR/bin/aom_lightfield_encoder"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/lightfield_decoder" "$DESTDIR/bin/aom_lightfield_decoder"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/set_maps" "$DESTDIR/bin/aom_set_maps"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/svc_encoder_rtc" "$DESTDIR/bin/aom_svc_encoder_rtc"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/simple_decoder" "$DESTDIR/bin/aom_simple_decoder"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/scalable_decoder" "$DESTDIR/bin/aom_scalable_decoder"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/scalable_encoder" "$DESTDIR/bin/aom_scalable_encoder"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/simple_encoder" "$DESTDIR/bin/aom_simple_encoder"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/twopass_encoder" "$DESTDIR/bin/aom_twopass_encoder"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/lossless_encoder" "$DESTDIR/bin/aom_lossless_encoder"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/dump_obu" "$DESTDIR/bin/aom_dump_obu"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/aom_cx_set_ref" "$DESTDIR/bin/aom_cx_set_ref"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/decode_to_md5" "$DESTDIR/bin/aom_decode_to_md5"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/noise_model" "$DESTDIR/bin/aom_noise_model"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/photon_noise_table" "$DESTDIR/bin/aom_photon_noise_table"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/decode_with_drops" "$DESTDIR/bin/aom_decode_with_drops"
+ sudo install -D -m 755 "$TMPDIR/$PKGDIR/tmpbuild/resize_util" "$DESTDIR/bin/aom_resize_util"
+fi
+sudo ldconfig
+
+## EXIT
+exit
+
+## ENJOY

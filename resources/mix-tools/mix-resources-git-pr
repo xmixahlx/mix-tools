@@ -1,0 +1,15 @@
+#!/bin/bash
+
+### File: mix-resources-git-pr
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## GIT PR
+echo "*** Processing GITPR."
+if [ "$GITPR" ]; then
+ rm -f "$DEVDIR/$GITTREE\_$GITPR.patch"
+ wget "$GITPRPATCH" -O "$DEVDIR/$GITTREE\_$GITPR.patch"
+ patch -p1 < "$DEVDIR/$GITTREE\_$GITPR.patch"
+fi

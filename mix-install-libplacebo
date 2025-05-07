@@ -1,0 +1,80 @@
+#!/bin/sh
+
+### Package: mix-install-libplacebo
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+# MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL=https://code.videolan.org
+GITREPO=videolan
+GITTREE=libplacebo
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+### INSTALLDEPS
+# Debian
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y build-dep libplacebo
+ sudo apt-get -y install build-essential coreutils libc-bin git meson ninja-build
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+mkdir -p "$TMPDIR/$PKGDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## CONFIGURE
+meson setup ""$TMPDIR/$PKGDIR"/tmpbuild" --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype="release"
+
+## BUILD
+ninja -C ""$TMPDIR/$PKGDIR"/tmpbuild"
+
+## INSTALL
+sudo ninja -C ""$TMPDIR/$PKGDIR"/tmpbuild" install
+
+## EXIT
+exit
+
+## ENJOY

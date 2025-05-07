@@ -1,0 +1,12 @@
+#!/bin/bash
+
+### File: mix-resources-install-cmake
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## INSTALL CMAKE
+echo "*** Installing package with cmake."
+sudo cmake --install "$TMPDIR/$PKGDIR/tmpbuild"
+sudo ldconfig

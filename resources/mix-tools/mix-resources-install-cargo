@@ -1,0 +1,12 @@
+#!/bin/bash
+
+### File: mix-resources-install-cargo
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## INSTALL CARGO
+echo "*** Installing package with cargo."
+cargo install --locked --path .
+

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+### File: mix-resources-configure-cmake
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## CONFIGURE CMAKE
+echo "*** Configuring package with cmake."
+cmake -DCMAKE_INSTALL_PREFIX="$DESTDIR" -DCMAKE_INSTALL_LIBDIR="$DESTDIR/lib/$MULTILIBDIR" \
+-DCMAKE_BUILD_TYPE="$BUILDTYPE" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+-DUSE_CCACHE=ON -DBUILD_SHARED_LIBS=ON -DNATIVE=ON -B "$TMPDIR/$PKGDIR/tmpbuild" -G Ninja

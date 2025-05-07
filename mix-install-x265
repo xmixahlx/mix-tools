@@ -40,6 +40,11 @@ echo "*** CC selected is $CC."
 CXX="g++-14"
 echo "*** CXX selected is $CXX."
 
+# CPP
+# Does not support ccache or gcc-14
+CPP="g++-14 -E"
+echo "*** CXX selected is $CXX."
+
 ## VARS
 RESDIR=$MIXTOOLSDIR/resources
 DEVDIR=$MIXTOOLSDIR/upstream
@@ -62,12 +67,12 @@ mkdir -p $DEVDIR
 cd $DEVDIR
 
 ## GIT
-[ -d $PKGDIR ] || git clone --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
+[ -d $PKGDIR ] || git clone --depth=200 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
 cd $PKGDIR
 git clean -dfx
 git reset --hard HEAD
 git pull
-git submodule update --init --depth=1
+git submodule update --init --depth=200
 
 ## CLEAN
 rm -Rf tmpbuild
@@ -108,7 +113,13 @@ make -j `nproc`
 
 ## INSTALL
 sudo make install
-
+# MASTER
+# fix non-install on master branch
+#if [ "$GITBRANCH" = "master" ]; then
+# sudo install tmpbuild/8bit/libx265.a $DESTDIR/lib/$MULTILIBDIR/
+# sudo install tmpbuild/8bit/libx265.so $DESTDIR/lib/$MULTILIBDIR/
+# sudo install tmpbuild/8bit/libx265.so.* $DESTDIR/lib/$MULTILIBDIR/
+#fi
 sudo ldconfig
 
 ## EXIT

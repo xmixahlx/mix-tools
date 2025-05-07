@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-alsa-lib
-### Version: v20240811.2300
+### Version: v0.20250503.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -75,8 +75,9 @@ git submodule update --init --recursive --depth=1
 
 ## CONFIGURE
 autoreconf -vifs
-./configure --prefix=$DESTDIR --localstatedir=$LOCALSTATEDIR --sysconfdir=$SYSCONFDIR --libdir=$DESTDIR/lib/$MULTILIBDIR \
---enable-alisp --enable-mixer-modules --enable-mixer-pymods
+./configure --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR \
+--localstatedir=$LOCALSTATEDIR --sysconfdir=$SYSCONFDIR \
+--enable-mixer-modules --enable-mixer-pymods --enable-year2038
 
 ## BUILD
 make -j `nproc`

@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib/x86_64-linux-gnu
+includedir=${prefix}/include
+
+Name: quirc
+Description: QRcode scanning and decoding
+URL: https://dlbeer.co.nz/oss/quirc.html
+Version: 1.2
+Libs: -L${libdir} -lquirc
+Cflags: -I${includedir}

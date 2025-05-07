@@ -1,0 +1,91 @@
+#!/bin/sh
+
+### Package: mix-install-avisynth-mvtools
+### Version: v0.20250120.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+# Upstream branch is "mvtools-pfmod"
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="mvtools-pfmod"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="pinterf"
+GITTREE="mvtools"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+### RUN
+
+## INSTALLDEPS
+# Debian
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$TMPDIR/$PKGDIR"
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## CONFIGURE
+cmake -DCMAKE_INSTALL_PREFIX="$DESTDIR" -DCMAKE_INSTALL_LIBDIR="$DESTDIR/lib/$MULTILIBDIR" \
+-DCMAKE_BUILD_TYPE="$BUILDTYPE" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+-DUSE_CCACHE=ON -DBUILD_SHARED_LIBS=ON -DNATIVE=ON -B "$TMPDIR/$PKGDIR/tmpbuild" -G Ninja
+
+## BUILD
+ninja -C "$TMPDIR/$PKGDIR/tmpbuild"
+
+## INSTALL
+sudo ninja -C "$TMPDIR/$PKGDIR/tmpbuild" install
+sudo ldconfig
+
+## EXIT
+exit
+
+## ENJOY

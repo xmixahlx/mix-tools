@@ -1,0 +1,11 @@
+#!/bin/bash
+
+### File: mix-resources-configure-meson
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## CONFIGURE
+echo "*** Configuring package with meson."
+meson setup "$TMPDIR/$PKGDIR/tmpbuild" --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype="$BUILDTYPE"

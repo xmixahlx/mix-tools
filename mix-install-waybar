@@ -61,7 +61,8 @@ git pull
 git submodule update --init --depth=1
 
 ## CONFIGURE
-meson tmpbuild --prefix=/usr/local --libdir=/usr/local/lib/x86_64-linux-gnu --buildtype=release
+meson tmpbuild --prefix=/usr/local --libdir=/usr/local/lib/x86_64-linux-gnu --buildtype=release \
+-Dexperimental=true -Dtests=disabled
 
 ## BUILD
 ninja -C tmpbuild

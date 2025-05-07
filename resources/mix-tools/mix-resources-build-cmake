@@ -1,0 +1,11 @@
+#!/bin/bash
+
+### File: mix-resources-build-cmake
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## BUILD CMAKE
+echo "*** Building package with cmake."
+cmake --build "$TMPDIR/$PKGDIR/tmpbuild" --config "$BUILDTYPE" -j `nproc`

@@ -1,0 +1,13 @@
+#! /bin/bash
+
+### File: mix-resources-tmpdir-prep
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## TMPDIR PREP
+mkdir -p "$TMPDIR"
+rm -Rf "$TMPDIR/$PKGDIR"
+cp -R "$DEVDIR/$PKGDIR" "$TMPDIR/"
+cd "$TMPDIR/$PKGDIR"

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+### File: mix-resources-build-ninja
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## BUILD
+echo "*** Building package with ninja."
+ninja -C "$TMPDIR/$PKGDIR/tmpbuild"

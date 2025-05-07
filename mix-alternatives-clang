@@ -22,13 +22,13 @@ echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
 # DEBIANREPO
 if [ -z $DEBIANREPO ]; then
- DEBIANREPO=unstable
+ DEBIANREPO=experimental
 fi
 echo "*** DEBIANREPO selected is $DEBIANREPO."
 
 # PKGVER
 if [ -z $PKGVER ]; then
- PKGVER=19
+ PKGVER=20
 fi
 echo "*** PKGVER selected is $PKGVER."
 

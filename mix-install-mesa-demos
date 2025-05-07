@@ -1,0 +1,107 @@
+#!/bin/sh
+
+### Package: mix-install-mesa-demos
+### Version: v20241201.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## OVERRIDES
+# MIXTOOLSDIR
+if [ -z $MIXTOOLSDIR ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH=$MIXTOOLSDIR:$PATH
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+# INSTALLDEPS
+if [ -z $INSTALLDEPS ]; then
+ INSTALLDEPS=debian
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+# GITBRANCH
+if [ -z $GITBRANCH ]; then
+ GITBRANCH=main
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+# GITPR
+if [ -z $GITPR ]; then
+ GITPR=none
+fi
+echo "*** GITPR selected is $GITPR."
+
+# DESTDIR
+if [ -z $DESTDIR ]; then
+ DESTDIR=/usr/local
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## VARS
+RESDIR=$MIXTOOLSDIR/resources
+DEVDIR=$MIXTOOLSDIR/upstream
+GITURL=https://gitlab.freedesktop.org
+GITREPO=mesa
+GITTREE=demos
+PKGDIR=$GITTREE\_$GITBRANCH
+GITPRURL=$GITURL
+GITPRPATCH=$GITPRURL/$GITREPO/$GITTREE/-/merge_requests/$GITPR.patch
+MULTILIBDIR=`gcc -dumpmachine`
+
+## INSTALLDEPS
+if [ $INSTALLDEPS = debian ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git meson
+fi
+
+## PREP
+set -e
+mkdir -p $DEVDIR
+cd $DEVDIR
+
+## CLEAN
+sudo rm -Rf $PKGDIR/tmpbuild
+
+## GIT
+[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
+cd $PKGDIR
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --recursive --depth=1
+
+## GITPR
+if [ $GITPR != none ]; then
+ rm -f $DEVDIR/$GITTREE\_$GITPR.patch
+ wget $GITPRPATCH -O $DEVDIR/$GITTREE\_$GITPR.patch
+ patch -p1 < $DEVDIR/$GITTREE\_$GITPR.patch
+fi
+
+## WORKAROUNDS
+#cp $RESDIR/mesa/custom-llvm-$LLVMVER.ini .
+#cp $RESDIR/mesa/clangd .clangd
+
+## RUSTUP
+rustup override set stable
+
+## CONFIGURE
+meson tmpbuild --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR --buildtype=release
+
+#-Dgallium-drivers="$GALLIUMDRIVERS" -Dgallium-extra-hud=true -Dgallium-nine="$NINE" \
+#-Dgallium-opencl="$OPENCL" -Dgallium-rusticl="$RUSTICL" -Dvulkan-drivers="$VULKANDRIVERS" \
+#-Dvulkan-layers=overlay -Dspirv-to-dxil=true -Dosmesa="$OSMESA" -Dtools=drm-shim \
+#-Dteflon=true -Dgpuvis=true -Dvulkan-beta=true -Dvideo-codecs=all \
+#-Dgallium-d3d12-video=enabled -Drust_std=2021 \
+#--native-file=custom-llvm-"$LLVMVER".ini
+
+## BUILD
+ninja -C tmpbuild
+
+## INSTALL
+sudo ninja -C tmpbuild install
+sudo ldconfig
+
+## EXIT
+exit
+
+## ENJOY

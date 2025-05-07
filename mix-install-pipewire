@@ -21,8 +21,9 @@ fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
 # GITBRANCH
+# Upstream branch is "master"
 if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+ GITBRANCH=1.4
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
@@ -79,24 +80,26 @@ git submodule update --init --recursive --depth=1
 meson tmpbuild --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR --buildtype=release \
 -Ddocs=disabled -Dman=enabled -Dgstreamer=enabled -Dgstreamer-device-provider=enabled \
 -Dsystemd=enabled -Dsystemd-system-service=enabled -Dsystemd-user-service=enabled \
--Dpipewire-alsa=enabled -Dpipewire-jack=enabled -Dpipewire-v4l2=enabled -Djack-devel=true \
+-Dpipewire-alsa=enabled -Dpipewire-jack=enabled -Dpipewire-v4l2=enabled -Djack-devel=false \
 -Dspa-plugins=enabled -Dalsa=enabled -Daudiomixer=enabled \
 -Daudioconvert=enabled -Dbluez5=enabled -Dbluez5-backend-hsp-native=enabled \
--Dbluez5-backend-hfp-native=enabled -Dbluez5-backend-native-mm=enabled -Dbluez5-backend-ofono=enabled -Dbluez5-backend-hsphfpd=enabled \
--Dbluez5-codec-aptx=enabled -Dbluez5-codec-ldac=enabled -Dbluez5-codec-aac=enabled \
--Dbluez5-codec-lc3plus=disabled -Dbluez5-codec-opus=enabled -Dbluez5-codec-lc3=disabled -Dcontrol=enabled \
--Daudiotestsrc=enabled -Dffmpeg=enabled -Djack=enabled -Dsupport=enabled -Devl=disabled \
--Dv4l2=enabled -Ddbus=enabled -Dlibcamera=enabled -Dvideoconvert=enabled -Dvideotestsrc=enabled \
--Dvolume=enabled -Dvulkan=enabled -Dpw-cat=enabled -Dpw-cat-ffmpeg=enabled -Dudev=enabled -Dsdl2=enabled -Dsndfile=enabled \
--Dlibmysofa=enabled -Dlibpulse=enabled -Droc=enabled -Davahi=enabled -Decho-cancel-webrtc=enabled -Dlibusb=enabled \
+-Dbluez5-backend-hfp-native=enabled -Dbluez5-backend-native-mm=enabled -Dbluez5-backend-ofono=enabled \
+-Dbluez5-backend-hsphfpd=enabled -Dbluez5-codec-aptx=enabled -Dbluez5-codec-ldac=enabled \
+-Dbluez5-codec-aac=enabled -Dbluez5-codec-lc3plus=disabled -Dbluez5-codec-opus=enabled \
+-Dbluez5-codec-lc3=disabled -Dcontrol=enabled -Daudiotestsrc=enabled -Dffmpeg=enabled -Djack=enabled \
+-Dsupport=enabled -Devl=disabled -Dv4l2=enabled -Ddbus=enabled -Dlibcamera=enabled \
+-Dvideoconvert=enabled -Dvideotestsrc=enabled -Dvolume=enabled -Dvulkan=enabled -Dpw-cat=enabled \
+-Dpw-cat-ffmpeg=enabled -Dudev=enabled -Dsdl2=enabled -Dsndfile=enabled -Dlibmysofa=enabled \
+-Dlibpulse=enabled -Droc=enabled -Davahi=enabled -Decho-cancel-webrtc=enabled -Dlibusb=enabled \
 -Draop=enabled -Dlv2=enabled -Dx11=enabled -Dx11-xfixes=enabled -Dlibcanberra=enabled \
 -Dlegacy-rtkit=true -Davb=enabled -Dflatpak=enabled -Dreadline=enabled -Dgsettings=enabled \
 -Dcompress-offload=enabled -Dpam-defaults-install=false -Dopus=enabled -Dlibffado=enabled \
--Dlogind=enabled -Dlogind-provider=libsystemd -Dgsettings-pulse-schema=enabled -Dsnap=enabled
+-Dlogind=enabled -Dlogind-provider=libsystemd -Dgsettings-pulse-schema=enabled -Dsnap=enabled \
+-Dsession-managers=""
 
-# docs disabled to test
-# evl disabled to test
-# lc3plus and lc3 disabled to test
+# docs disabled
+# evl disabled
+# lc3plus and lc3 disabled
 
 ## BUILD
 ninja -C tmpbuild
@@ -118,9 +121,10 @@ systemctl --user stop pulseaudio
 systemctl --user disable pulseaudio
 systemctl --user mask pulseaudio
 systemctl --user daemon-reload
-systemctl --user enable --now pipewire pipewire-pulse
-systemctl --user stop --now pipewire pipewire-pulse
-systemctl --user start --now pipewire pipewire-pulse
+systemctl --user enable pipewire pipewire-pulse
+systemctl --user stop pipewire.service pipewire.socket pipewire-pulse.service pipewire-pulse.socket
+systemctl --user start pipewire.service pipewire.socket pipewire-pulse.service pipewire-pulse.socket
+systemctl --user restart pipewire.service pipewire.socket pipewire-pulse.service pipewire-pulse.socket
 systemctl --user daemon-reload
 
 ## EXIT

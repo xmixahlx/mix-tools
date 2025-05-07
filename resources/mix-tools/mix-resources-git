@@ -1,0 +1,18 @@
+#!/bin/bash
+
+### File: mix-resources-git
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## GIT
+echo "*** Cloning/Updating git repository."
+if [ ! -d "$PKGDIR" ]; then
+ git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+fi
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --recursive

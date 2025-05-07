@@ -56,7 +56,6 @@ PKGDIR=$GITTREE\_$GITBRANCH
 ## DEPS
 # Provide INSTALLDEPS=debian to install dependencies.
 if [ $INSTALLDEPS = debian ]; then
-# sudo apt-get -y build-dep blueman
  sudo apt-get -y install build-essential coreutils libc-bin
 fi
 
@@ -74,18 +73,14 @@ git pull
 git submodule update --init --recursive --depth=1
 
 ## CONFIGURE
-#autoreconf -vifs
-#./configure --prefix=$DESTDIR --localstatedir=$LOCALSTATEDIR --sysconfdir=$SYSCONFDIR --libdir=$DESTDIR/lib/$MULTILIBDIR
+#./gitcompile
 
 ## BUILD
-make -j `nproc`
-
-#TEST
-exit
+#make -j `nproc`
 
 ## INSTALL
-sudo make install
-sudo ldconfig
+#sudo make install
+#sudo ldconfig
 
 ## EXIT
 exit

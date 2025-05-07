@@ -1,0 +1,80 @@
+#!/bin/sh
+
+### Package: mix-install-davs2
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## OVERRIDES
+# MIXTOOLSDIR
+if [ -z $MIXTOOLSDIR ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH=$MIXTOOLSDIR:$PATH
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+# INSTALLDEPS
+if [ -z $INSTALLDEPS ]; then
+ INSTALLDEPS=debian
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+# GITBRANCH
+if [ -z $GITBRANCH ]; then
+ GITBRANCH=master
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+# DESTDIR
+if [ -z $DESTDIR ]; then
+ DESTDIR=/usr/local
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## VARS
+RESDIR=$MIXTOOLSDIR/resources
+DEVDIR=$MIXTOOLSDIR/upstream
+GITURL=https://github.com
+GITREPO=pkuvcl
+GITTREE=davs2
+PKGDIR=$GITTREE\_$GITBRANCH
+MULTILIBDIR=`gcc -dumpmachine`
+
+## DEPS
+# Provide INSTALLDEPS=debian to install dependencies.
+if [ $INSTALLDEPS = debian ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git meson
+fi
+
+## PREP
+set -e
+mkdir -p $DEVDIR
+cd $DEVDIR
+
+## CLEAN
+sudo rm -Rf $PKGDIR/tmpbuild
+
+## GIT
+[ -d $PKGDIR ] || git clone --recursive --depth=100 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
+cd $PKGDIR
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --depth=1
+
+## CONFIGURE
+#meson tmpbuild --prefix=/usr/local --libdir=/usr/local/lib/x86_64-linux-gnu \
+#--buildtype=release -Dinput_oss=$OSSINPUT
+
+## BUILD
+#ninja -C tmpbuild
+
+## INSTALL
+#sudo ninja -C tmpbuild install
+#sudo ldconfig
+
+## EXIT
+exit
+
+## ENJOY

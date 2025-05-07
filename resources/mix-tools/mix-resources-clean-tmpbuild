@@ -1,0 +1,12 @@
+#!/bin/bash
+
+### File: mix-tools-clean-tmpbuild
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## CLEAN
+echo "*** Removing package tmpbuild directories."
+sudo rm -Rf "$PKGDIR/tmpbuild"
+sudo rm -Rf "$TMPDIR/$PKGDIR/tmpbuild"

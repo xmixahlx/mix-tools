@@ -61,7 +61,7 @@ git submodule update --init
 ## CONFIGURE
 
 ## BUILD
-make CFLAGS+="-fPIC"
+CFLAGS+=" -fPIC" make
 
 ## INSTALL
 sudo make install

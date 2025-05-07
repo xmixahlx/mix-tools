@@ -1,0 +1,12 @@
+#!/bin/bash
+
+### File: mix-resources-install-ninja
+### Version: v20241230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## INSTALL
+echo "*** Installing package with ninja."
+sudo ninja -C "$TMPDIR/$PKGDIR/tmpbuild" install
+sudo ldconfig

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-ffmpeg
-### Version: v20241111.2300
+### Version: v0.20250503.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: svt-hevc, x265, x264, vmaf, lensfun, aribcaption, qrencode, quirc, uavs3d, vvenc
@@ -20,9 +20,9 @@ fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
 # GITBRANCH
-# Upstream branch is master, release branches are "release/version" i.e. "release/7.1"
+# Upstream branch is "master", release tags are "n#.#", branches are "release/#.#".
 if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+ GITBRANCH=release/7.1
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
@@ -38,6 +38,29 @@ if [ -z $BUILDCONFIG ]; then
  BUILDCONFIG=full
 fi
 echo "*** BUILDCONFIG selected is $BUILDCONFIG."
+
+## PKGVER
+# Options include 7.0, 7.1, and upstream. Default is 7.1.
+# Define
+VERSION70PARAMS="--enable-libdvdnav --enable-libdvdread --enable-libqrencode"
+# --enable-libquirc
+VERSION71PARAMS="$VERSION70PARAMS --enable-libvvenc"
+# Default
+if [ -z "$PKGVER" ]; then
+ PKGVER="7.1"
+fi
+# 7.0
+if [ "$PKGVER" = "7.0" ];  then
+ VERSIONPARAMS="$VERSION70PARAMS"
+fi
+# 7.1
+if [ "$PKGVER" = "7.1" ];  then
+ VERSIONPARAMS="$VERSION70PARAMS $VERSION71PARAMS"
+fi
+# upstream
+if [ "$PKGVER" = "upstream" ];  then
+ VERSIONPARAMS="$VERSION70PARAMS $VERSION71PARAMS"
+fi
 
 ## VARS
 DATE=`date +%Y%m%d%H%M%S`
@@ -64,12 +87,12 @@ mkdir -p $DEVDIR
 cd $DEVDIR
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
+[ -d $PKGDIR ] || git clone --recursive --depth=100 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
 cd $PKGDIR
 git clean -dfx
 git reset --hard HEAD
 git pull
-git submodule update --init --depth=1
+git submodule update --init --depth=100
 
 ## CONFIGURE
 # options are minimal and full
@@ -106,11 +129,10 @@ if [ $BUILDCONFIG = full ]; then
  --enable-libxcb-shm --enable-libxcb-xfixes --enable-libxcb-shape --enable-libxvid --enable-libxml2 \
  --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 \
  --enable-libmysofa --enable-openal --enable-opencl --enable-opengl \
- --enable-pocketsphinx --enable-vapoursynth --enable-libvpl --enable-omx \
- --enable-libdvdnav --enable-libdvdread --enable-libqrencode --enable-libquirc \
- --enable-libvvenc
+ --enable-pocketsphinx --enable-vapoursynth --enable-libvpl $VERSIONPARAMS
 fi
 
+# disable omx
 # lensfun todo
 ## 7.0
 #--enable-libdvdnav --enable-dvdread --enable-libqrencode --enable-libquirc

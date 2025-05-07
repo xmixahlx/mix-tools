@@ -1,0 +1,92 @@
+#!/bin/sh
+
+### Package: mix-install-opus
+### Version: v20241228.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+# MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL=https://gitlab.xiph.org
+GITREPO=xiph
+GITTREE=opus
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+### INSTALLDEPS
+# Debian
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+mkdir -p "$TMPDIR/$PKGDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## PACKAGE_VERSION
+PACKAGEVERSION="`git describe --always | sed -e 's|v||' -e 's|-|.|g' -e 's|draft.ietf.codec.oggopus.||'`"
+echo "PACKAGE_VERSION=$PACKAGEVERSION" > package_version
+
+## OPUSDATA
+if [ -f "$DEVDIR/opus_data-160753e983198f29f1aae67c54caa0e30bd90f1ce916a52f15bdad2df8e35e58.tar.gz" ]; then
+ cp "$DEVDIR/opus_data-160753e983198f29f1aae67c54caa0e30bd90f1ce916a52f15bdad2df8e35e58.tar.gz" .
+fi
+
+## CONFIGURE
+./autogen.sh
+./configure --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" \
+--enable-custom-modes --enable-dred --enable-deep-plc --enable-lossgen \
+--enable-osce-training-data --enable-osce --enable-maintainer-mode
+
+## BUILD
+make -j `nproc`
+
+## INSTALL
+sudo make install
+sudo ldconfig
+
+## EXIT
+exit
+
+## ENJOY

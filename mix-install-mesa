@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-mesa
-### Version: v20241201.2300
+### Version: v0.20250503.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -46,42 +46,14 @@ echo "*** VULKANDRIVERS selected is $VULKANDRIVERS."
 
 # GALLIUMDRIVERS
 if [ -z $GALLIUMDRIVERS ];then
- GALLIUMDRIVERS="radeonsi,zink,swrast"
+ GALLIUMDRIVERS="radeonsi,zink,llvmpipe,softpipe"
 fi
 echo "*** GALLIUMDRIVERS selected is $GALLIUMDRIVERS."
 
-# OPENCL
-# options are enabled or disabled
-if [ -z $OPENCL ];then
- OPENCL="disabled"
-fi
-echo "*** OPENCL selected is $OPENCL."
-
-# RUSTICL
-# options are true or false
-if [ -z $RUSTICL ];then
- RUSTICL="true"
-fi
-echo "*** RUSTICL selected is $RUSTICL."
-
-# NINE
-# options are true or false
-if [ -z $NINE ];then
- NINE="true"
-fi
-echo "*** NINE selected is $NINE."
-
-# OSMESA
-# options are true or false
-if [ -z $OSMESA ];then
- OSMESA="true"
-fi
-echo "*** OSMESA selected is $OSMESA."
-
 # LLVMVER
-# options are true or false or local
+# options are 19, 20, or local
 if [ -z $LLVMVER ];then
- LLVMVER="local"
+ LLVMVER="20"
 fi
 echo "*** LLVMVER selected is $LLVMVER."
 
@@ -100,11 +72,11 @@ MULTILIBDIR=`gcc -dumpmachine`
 if [ $INSTALLDEPS = debian ]; then
  sudo apt-get -y install build-essential coreutils libc-bin git meson \
  libunwind-dev libxvmc-dev libxv-dev libxcb-xinput-dev libxcb-damage0-dev \
- libomxil-bellagio-dev libvdpau-dev python3-mako bison byacc flex libxcb-glx0-dev \
+ libvdpau-dev python3-mako bison byacc flex libxcb-glx0-dev \
  libxcb-dri2-0-dev libxcb-dri3-dev directx-headers-dev flex glslang-tools \
  libsensors-dev libset-scalar-perl libvdpau-dev libxcb-dri2-0-dev libxcb-present-dev \
  libxcb-randr0-dev libxcb-shape0-dev libxcb-sync-dev libxcb-xfixes0-dev \
- libxshmfence-dev spirv-tools libclc-18-dev libelf-dev libx11-xcb-dev \
+ libxshmfence-dev spirv-tools libclc-20-dev libelf-dev libx11-xcb-dev \
  directx-headers-dev dwz ed gettext glslang-tools groff-base \
  intltool-debian libarchive-zip-perl libelf-dev libfile-stripnondeterminism-perl \
  libglvnd-core-dev libglvnd-dev libopengl-dev libopengl0 \
@@ -114,7 +86,7 @@ if [ $INSTALLDEPS = debian ]; then
  libxcb-randr0-dev libxcb-shape0-dev libxcb-sync-dev libxcb-xfixes0-dev \
  libxrandr-dev libxshmfence-dev libxxf86vm-dev libzstd-dev \
  man-db python3-mako python3-markupsafe quilt spirv-tools bindgen \
- libclang-cpp18-dev lua5.4 liblua5.4-dev
+ libclang-cpp20-dev lua5.4 liblua5.4-dev
 fi
 
 ## PREP
@@ -145,10 +117,10 @@ cp $RESDIR/mesa/custom-llvm-$LLVMVER.ini .
 cp $RESDIR/mesa/clangd .clangd
 
 ## CONFIGURE
-meson tmpbuild --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR --buildtype=release \
--Dgallium-drivers="$GALLIUMDRIVERS" -Dgallium-extra-hud=true -Dgallium-nine="$NINE" \
--Dgallium-opencl="$OPENCL" -Dgallium-rusticl="$RUSTICL" -Dvulkan-drivers="$VULKANDRIVERS" \
--Dvulkan-layers=overlay -Dspirv-to-dxil=true -Dosmesa="$OSMESA" -Dtools=drm-shim \
+meson setup tmpbuild --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR --buildtype=release \
+-Dgallium-drivers="$GALLIUMDRIVERS" -Dgallium-extra-hud=true \
+-Dgallium-rusticl=true -Dvulkan-drivers="$VULKANDRIVERS" \
+-Dvulkan-layers=overlay -Dspirv-to-dxil=true -Dtools=drm-shim \
 -Dteflon=true -Dgpuvis=true -Dvulkan-beta=true -Dvideo-codecs=all \
 -Dgallium-d3d12-video=enabled -Drust_std=2021 \
 --native-file=custom-llvm-"$LLVMVER".ini

@@ -20,7 +20,7 @@ fi
 # GITBRANCH
 # upstream branch is "master"
 if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+ GITBRANCH=testing
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
@@ -40,14 +40,14 @@ echo "*** AVX512 selected is $AVX512."
 # DOVI
 # options are off or on
 if [ -z $DOVI ]; then
- DOVI=1
+ DOVI=0
 fi
 echo "*** DOVI selected is $DOVI."
 
 # HDR10PLUS
 # options are off or on
 if [ -z $HDR10PLUS ]; then
- HDR10PLUS=1
+ HDR10PLUS=0
 fi
 echo "*** HDR10PLUS selected is $HDR10PLUS."
 
@@ -57,8 +57,8 @@ echo "*** HDR10PLUS selected is $HDR10PLUS."
 RESDIR=$MIXTOOLSDIR/resources
 DEVDIR=$MIXTOOLSDIR/upstream
 GITURL=https://github.com
-GITREPO=gianni-rosato
-GITTREE=svt-av1-psy
+GITREPO=blueswordm
+GITTREE=svt-av1-psyex
 PKGDIR=$GITTREE\_$GITBRANCH
 MULTILIBDIR=`gcc -dumpmachine`
 
