@@ -1,0 +1,57 @@
+#!/bin/sh
+
+### Package: mix-run-linux-kernel-management
+### Version: v0.20250511.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## LINUXDIR
+if [ -z "$LINUXDIR" ]; then
+ LINUXDIR="/home/$USER/Development/linux"
+fi
+echo "*** LINUXDIR selected is $LINUXDIR."
+
+## PKGDIR
+if [ -z "$PKGDIR" ]; then
+ PKGDIR="$LINUXDIR/PACKAGES"
+fi
+echo "*** PKGDIR selected is $PKGDIR."
+
+## CONFIGDIR
+if [ -z "$CONFIGDIR" ]; then
+ CONFIGDIR="$LINUXDIR/CONFIG"
+fi
+echo "*** CONFIGDIR selected is $CONFIGDIR."
+
+## ENV
+set -e
+mkdir -p "$LINUXDIR"
+mkdir -p "$PKGDIR"
+mkdir -p "$CONFIGDIR"
+
+## INSTALL
+sudo dpkg -i "$TMPDIR"/linux-libc*.deb
+sudo dpkg -i "$TMPDIR"/linux-headers*.deb
+sudo dpkg -i "$TMPDIR"/linux-image*.deb
+
+## COPY PACKAGES
+cp "$TMPDIR"/*.deb "$PKGDIR"
+cp "$TMPDIR"/*.buildinfo "$PKGDIR"
+cp "$TMPDIR"/*.changes "$PKGDIR"
+
+## COPY CONFIGS
+cp /boot/config* "$CONFIGDIR"
+
+## EXIT
+exit
+
+## ENJOY

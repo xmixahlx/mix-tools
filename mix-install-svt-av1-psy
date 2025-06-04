@@ -75,7 +75,7 @@ mkdir -p $DEVDIR
 cd $DEVDIR
 
 ## GIT
-[ -d $PKGDIR ] || git clone --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
+[ -d $PKGDIR ] || git clone --depth=100 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
 cd $PKGDIR
 git clean -dfx
 git reset --hard

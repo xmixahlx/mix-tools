@@ -1,0 +1,83 @@
+#!/bin/sh
+
+### Package: mix-install-handbrake-psy
+### Version: v0.20250601.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: pipewire
+
+## OVERRIDES
+# MIXTOOLSDIR
+if [ -z $MIXTOOLSDIR ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH=$MIXTOOLSDIR:$PATH
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+# INSTALLDEPS
+if [ -z $INSTALLDEPS ]; then
+ INSTALLDEPS=debian
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+# GITBRANCH
+# Upstream is main
+if [ -z $GITBRANCH ]; then
+ GITBRANCH=main
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## VARS
+RESDIR=$MIXTOOLSDIR/resources
+DEVDIR=$MIXTOOLSDIR/upstream
+DESTDIR=/usr/local
+MULTILIBDIR=`gcc -dumpmachine`
+GITURL=https://github.com
+GITREPO=nj0be
+GITTREE=handbrake-svt-av1-psy
+PKGDIR=$GITTREE\_$GITBRANCH
+
+## DEPS
+# Provide INSTALLDEPS=debian to install dependencies.
+if [ $INSTALLDEPS = debian ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git patch
+fi
+
+## PREP
+set -e
+mkdir -p $DEVDIR
+cd $DEVDIR
+
+## CLEAN
+sudo rm -Rf $PKGDIR/HandBrake/tmpbuild
+
+## GIT
+[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
+cd $PKGDIR
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --recursive --depth=1
+
+## PATCH
+./patch.sh -c
+
+## CONFIGURE
+cd HandBrake
+./configure --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR \
+--enable-gtk3 --enable-x265 --enable-numa --enable-fdk-aac --enable-nvenc \
+--enable-qsv --enable-vce
+
+## BUILD
+cd build
+make -j `nproc`
+
+## INSTALL
+sudo make install
+[ -f $DESTDIR/bin/handbrake-gtk ] || sudo ln -s $DESTDIR/bin/ghb $DESTDIR/bin/handbrake-gtk
+sudo ldconfig
+
+## EXIT
+exit
+
+## ENJOY

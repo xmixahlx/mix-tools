@@ -6,36 +6,37 @@
 ### License: GPLv3
 ### Script Dependencies: svt-hevc, x265, x264, vmaf, lensfun, aribcaption, qrencode, quirc, uavs3d, vvenc
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
-# Upstream branch is "master", release tags are "n#.#", branches are "release/#.#".
-if [ -z $GITBRANCH ]; then
- GITBRANCH=release/7.1
+## GITBRANCH
+# Upstream branch is "master", release tags are "n#.#(.#)", branches are "release/#.#".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
-# DESTDIR
-if [ -z $DESTDIR ]; then
- DESTDIR=/usr/local
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
-# BUILDCONFIG
+## BUILDCONFIG
 # Options are minimal or full
-if [ -z $BUILDCONFIG ]; then
- BUILDCONFIG=full
+if [ -z "$BUILDCONFIG" ]; then
+ BUILDCONFIG="full"
 fi
 echo "*** BUILDCONFIG selected is $BUILDCONFIG."
 
@@ -47,7 +48,7 @@ VERSION70PARAMS="--enable-libdvdnav --enable-libdvdread --enable-libqrencode"
 VERSION71PARAMS="$VERSION70PARAMS --enable-libvvenc"
 # Default
 if [ -z "$PKGVER" ]; then
- PKGVER="7.1"
+ PKGVER="master"
 fi
 # 7.0
 if [ "$PKGVER" = "7.0" ];  then
@@ -57,24 +58,33 @@ fi
 if [ "$PKGVER" = "7.1" ];  then
  VERSIONPARAMS="$VERSION70PARAMS $VERSION71PARAMS"
 fi
-# upstream
-if [ "$PKGVER" = "upstream" ];  then
+# master
+if [ "$PKGVER" = "master" ];  then
  VERSIONPARAMS="$VERSION70PARAMS $VERSION71PARAMS"
 fi
 
+## SVTAV1PSY
+if [ -z "$SVTAV1PSY" ]; then
+ SVTAV1PSY=ON
+fi
+# Check
+if [ "$SVTAV1PSY" = "ON" ]; then
+ echo "*** SVTAV1PSY is enabled."
+fi
+
 ## VARS
-DATE=`date +%Y%m%d%H%M%S`
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=$MIXTOOLSDIR/upstream
-GITURL=https://github.com
-GITREPO=ffmpeg
-GITTREE=ffmpeg
-PKGDIR=$GITTREE\_$GITBRANCH
-MULTILIBDIR=`gcc -dumpmachine`
+DATE="`date +%Y%m%d%H%M%S`"
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="ffmpeg"
+GITTREE="ffmpeg"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## DEPS
 # Provide INSTALLDEPS=debian to install dependencies.
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
   sudo apt-get -y build-dep ffmpeg
   sudo apt-get -y install build-essential coreutils libc-bin wget tar bzip2 patch make \
   libudev-dev libdrm-dev libvpl-dev liblc3-dev libqrencode-dev libssh-dev libtls-dev \
@@ -83,30 +93,42 @@ fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=100 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
 git reset --hard HEAD
 git pull
 git submodule update --init --depth=100
 
+## PATCH
+# Support SVT-AV1-PSY Extended CRF
+if [ "$SVTAV1PSY" = "ON" ]; then
+ echo "*** PATCHING ffmpeg for SVT-AV1-PSY extended CRF on master or 7.1 branch."
+ if [ "$PKGVER" = "7.1" ]; then
+  patch -p1 < "$RESDIR/ffmpeg/ffmpeg_svt-av1-psy_extended-crf_master.patch"
+ fi
+ if [ "$PKGVER" = "master" ]; then
+  patch -p1 < "$RESDIR/ffmpeg/ffmpeg_svt-av1-psy_extended-crf_7.1.patch"
+ fi
+fi
+
 ## CONFIGURE
 # options are minimal and full
-if [ $BUILDCONFIG = minimal ]; then
+if [ "$BUILDCONFIG" = "minimal" ]; then
  echo "*** BUILDCONFIG selected is $BUILDCONFIG."
- ./configure --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR --shlibdir=$DESTDIR/lib/$MULTILIBDIR \
+ ./configure --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --shlibdir="$DESTDIR/lib/$MULTILIBDIR" \
  --enable-gpl --enable-version3 --enable-nonfree  --enable-shared --enable-pic --disable-debug \
- --cc="$CC" --cxx="$CXX" --extra-cflags="$CFLAGS" --extra-cxxflags="$CXXFLAGS"
+ --enable-lto --cc="$CC" --cxx="$CXX" --extra-cflags="$CFLAGS" --extra-cxxflags="$CXXFLAGS"
 fi
-if [ $BUILDCONFIG = full ]; then
+if [ "$BUILDCONFIG" = "full" ]; then
  echo "\n*** Using full BUILDCONFIG.\n"
- ./configure --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR --shlibdir=$DESTDIR/lib/$MULTILIBDIR \
+ ./configure --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --shlibdir="$DESTDIR/lib/$MULTILIBDIR" \
  --enable-gpl --enable-version3 --enable-nonfree  --enable-shared --enable-pic --disable-debug \
- --cc="$CC" --cxx="$CXX" --extra-cflags="$CFLAGS" --extra-cxxflags="$CXXFLAGS" \
+ --enable-lto --cc="$CC" --cxx="$CXX" --extra-cflags="$CFLAGS" --extra-cxxflags="$CXXFLAGS" \
  --enable-chromaprint --enable-frei0r --enable-gcrypt --enable-gmp --enable-gnutls \
  --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption \
  --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca \
@@ -132,12 +154,9 @@ if [ $BUILDCONFIG = full ]; then
  --enable-pocketsphinx --enable-vapoursynth --enable-libvpl $VERSIONPARAMS
 fi
 
-# disable omx
-# lensfun todo
-## 7.0
-#--enable-libdvdnav --enable-dvdread --enable-libqrencode --enable-libquirc
-## 7.1
-# --enable-libvvenc
+## Notes
+# disabled omx
+# ??? lensfun
 # openssl and mbedtls are not selected, preferring gnutls
 # glslang not selected, preferring shaderc
 # decklink not selected, not found
@@ -151,13 +170,10 @@ fi
 # openvino todo
 # tensorflow todo
 # libtorch todo (newer version?)
-# quirc fix lib install
-# uavs3d fix lib install
 # xavs not selected, preferring xavs2
 # xeve xevd todo
 # mmal old
 # rkmpp old/arm64
-# mediafoundation ?
 
 ## BUILD
 make -j `nproc`

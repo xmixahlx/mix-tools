@@ -1,0 +1,157 @@
+#!/bin/sh
+
+### Package: mix-run-cpupower
+### Version: v0.20250511.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## LOGFILE
+if [ -z "$LOGFILE" ]; then
+ LOGFILE="/home/$USER/cpupower.log"
+fi
+echo "*** LOGFILE selected is $LOGFILE." | tee -a "$LOGFILE"
+
+## DATE
+DATE=`date +%Y%m%d%H%M%S`
+echo "*** DATE selected is $DATE." | tee -a "$LOGFILE"
+
+## GPU
+# Options are amdgpu
+# Default is amdgpu
+if [ -z "$GPU" ]; then
+ GPU="amdgpu"
+fi
+echo "*** GPU selected is $GPU." | tee -a "$LOGFILE"
+
+## PRESET
+# Configured options are performance, balanced, and powersave
+# Default
+if [ -z "$PRESET" ]; then
+ PRESET="performance"
+ if [ "$GPU" = "amdgpu" ]; then
+  POWERPROFILESPANEL="disable"
+  POWERPROFILESDPM="disable"
+ fi
+fi
+# NOTE: Performance is default.
+# Balanced
+if [ "$PRESET" = "balanced" ]; then
+ CPUGOV="ondemand"
+ CPUBOOST="0"
+ POWERPROFILES="balanced"
+ if [ "$GPU" = "amdgpu" ]; then
+  POWERPROFILESPANEL="enable"
+  POWERPROFILESDPM="disable"
+ fi
+ BACKLIGHT="15"
+fi
+# Powersave
+if [ "$PRESET" = "powersave" ]; then
+ CPUGOV="powersave"
+ CPUBOOST="0"
+ CPUMAX="1000"
+ POWERPROFILES="power-saver"
+ if [ "$GPU" = "amdgpu" ]; then
+  POWERPROFILESPANEL="enable"
+  POWERPROFILESDPM="enable"
+ fi
+ BACKLIGHT="10"
+fi
+echo "*** PRESET selected is $PRESET." | tee -a "$LOGFILE"
+
+## CPUGOV
+# Configured options are performance, ondemand, conservative, and powersave.
+# Default is performance governor.
+if [ -z "$CPUGOV" ]; then
+ CPUGOV="performance"
+fi
+echo "*** CPUGOV selected is $CPUGOV." | tee -a "$LOGFILE"
+
+## CPUMIN default
+# Provide value in megahertz (M).
+# Default is 1.
+# Note: A low value like "1" will default to the lowest supported value.
+if [ -z "$CPUMIN" ]; then
+ CPUMIN="1"
+fi
+echo "*** CPUMIN selected is $CPUMIN." | tee -a "$LOGFILE"
+
+## CPUMAX
+# Provide value in megahertz (M).
+# Default is 9999.
+# Note: A high value like "9999" will default to the highest supported value.
+if [ -z "$CPUMAX" ]; then
+ CPUMAX="9999"
+fi
+echo "*** CPUMAX selected is $CPUMAX." | tee -a "$LOGFILE"
+
+## CPUBOOST default
+# Options are 0 or 1 (off or on).
+# Default is 1.
+if [ -z "$CPUBOOST" ]; then
+ CPUBOOST="1"
+fi
+echo "*** CPUBOOST selected is $CPUBOOST." | tee -a "$LOGFILE"
+
+## POWERPROFILES
+# Options are performance, balanced, and power-saver.
+# Default is performance.
+if [ -z "$POWERPROFILES" ]; then
+ POWERPROFILES="performance"
+fi
+echo "*** POWERPROFILES selected is $POWERPROFILES." | tee -a "$LOGFILE"
+
+## POWERPROFILESPANEL
+# Options are enable and disable.
+# Default is disable.
+if [ -z "$POWERPROFILESPANEL" ]; then
+ POWERPROFILESPANEL="disable"
+fi
+echo "*** POWERPROFILESPANEL selected is $POWERPROFILESPANEL." | tee -a "$LOGFILE"
+
+## POWERPROFILESDPM
+# Options are enable and disable.
+# Default is disable.
+if [ -z "$POWERPROFILESDPM" ]; then
+ POWERPROFILESDPM="disable"
+fi
+echo "*** POWERPROFILESDPM selected is $POWERPROFILESDPM." | tee -a "$LOGFILE"
+
+## BACKLIGHT
+# Provide a value in percentage (1-100).
+# Default is 25.
+if [ -z "$BACKLIGHT" ]; then
+ BACKLIGHT="25"
+fi
+echo "*** BACKLIGHT selected is $BACKLIGHT." | tee -a "$LOGFILE"
+
+### RUN
+
+# set CPU min, max, and governor
+sudo cpupower frequency-set -d "$CPUMIN"M -u "$CPUMAX"M -g "$CPUGOV" | tee -a "$LOGFILE";
+
+# set turbo
+echo "$CPUBOOST" | sudo tee /sys/devices/system/cpu/cpufreq/boost | tee -a "$LOGFILE";
+
+# set backlight
+light -S "$BACKLIGHT"% | tee -a "$LOGFILE";
+
+# set power profile
+powerprofilesctl set "$POWERPROFILES" | tee -a "$LOGFILE";
+
+# Check for amdgpu
+if [ "$GPU" = "amdgpu" ]; then
+ # set panel savings
+ powerprofilesctl configure-action amdgpu_panel_power --"$POWERPROFILESPANEL" | tee -a "$LOGFILE";
+
+ # set dpm
+ powerprofilesctl configure-action amdgpu_dpm --"$POWERPROFILESDPM" | tee -a "$LOGFILE";
+fi
+
+## EXIT
+exit
+
+## ENJOY
