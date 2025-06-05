@@ -1,4 +1,4 @@
 upstream/
 download/
-*.bak
-*.wip
+*.bak*
+*.wip*

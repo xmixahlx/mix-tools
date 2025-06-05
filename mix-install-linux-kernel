@@ -1,290 +1,224 @@
 #!/bin/sh
 
 ### Package: mix-install-linux-kernel
-### Version: v20241208.2300
+### Version: v0.20250604.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
-### Script Dependencies: mold
+### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
  INSTALLDEPS="debian"
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-if [ -z $OPTIMIZE ]; then
- OPTIMIZE="3"
-fi
-echo "*** OPTIMIZE selected is $OPTIMIZE."
-
-# MARCH
-if [ -z $MARCH ]; then
- MARCH="znver4"
-fi
-echo "*** MARCH selected is $MARCH."
-
-# MTUNE
-if [ -z $MTUNE ]; then
- MTUNE="znver4"
-fi
-echo "*** MTUNE selected is $MTUNE."
-
-# LINKER
-if [ -z $LINKER ]; then
- LINKER="/usr/local/libexec/mold"
-fi
-echo "*** LINKER selected is $LINKER."
-
-# CFLAGS
-if [ -z $CFLAGOVERRIDE ]; then
- CFLAGS="-O$OPTIMIZE -march=$MARCH -mtune=$MTUNE -B$LINKER"
- CXXFLAGS="$CFLAGS"
-fi
-echo "*** CFLAGS selected is $CFLAGS."
-echo "*** CXXFLAGS selected is $CXXFLAGS."
-
-# BRANCH
-# Options are mainline and stable
-if [ -z $BRANCH ]; then
- BRANCH="mainline"
-fi
-echo "*** BRANCH selected is $BRANCH."
-
-# STABLEVER
-if [ -z $STABLEVER ]; then
- STABLEVER="6.12"
+## STABLEVER
+if [ -z "$STABLEVER" ]; then
+ STABLEVER="6.15"
 fi
 echo "*** STABLEVER selected is $STABLEVER."
 
-# MAINVER
-if [ -z $MAINVER ]; then
- MAINVER="6.13"
+## MAINVER
+if [ -z "$MAINVER" ]; then
+ MAINVER="6.16"
 fi
 echo "*** MAINVER selected is $MAINVER."
 
-# POINTVER
-if [ -z $POINTVER ]; then
- POINTVER=none
+## POINTVER
+if [ -z "$POINTVER" ]; then
+ POINTVER="none"
 fi
 echo "*** POINTVER selected is $POINTVER."
 
-# RCVER
-if [ -z $RCVER ]; then
- RCVER=none
+## RCVER
+if [ -z "$RCVER" ]; then
+ RCVER="none"
 fi
 echo "*** RCVER selected is $RCVER."
 
-# RTVER
-if [ -z $RTVER ]; then
- RTVER=none
+## BRANCH
+if [ "$RCVER" != "none" ]; then
+ BRANCH="mainline"
+else
+ BRANCH="stable"
 fi
-echo "*** RTVER selected is $RTVER."
+if [ -z "$BRANCH" ]; then
+ BRANCH="stable"
+fi
+echo "*** BRANCH selected is $BRANCH."
 
-# KERNELCONFIG
-if [ -z $KERNELCONFIG ]; then
+## KERNELCONFIG
+if [ -z "$KERNELCONFIG" ]; then
  KERNELCONFIG="/boot/config-`uname -r`"
 fi
 echo "*** KERNELCONFIG selected is $KERNELCONFIG."
 
-# KERNELPATCH
-if [ -z $KERNELPATCH ]; then
+## KERNELPATCH
+if [ -z "$KERNELPATCH" ]; then
  KERNELPATCH="none"
 fi
 echo "*** KERNELPATCH selected is $KERNELPATCH."
 
-# KERNELSCRIPTS
-if [ -z $KERNELSCRIPTS ]; then
- KERNELSCRIPTS=yes
+## KERNELSCRIPTS
+if [ -z "$KERNELSCRIPTS" ]; then
+ KERNELSCRIPTS="yes"
 fi
 echo "*** KERNELSCRIPTS selected is $KERNELSCRIPTS."
 
-# KERNELSCRIPTSRT
-if [ -z $KERNELSCRIPTSRT ]; then
- KERNELSCRIPTSRT=yes
+## KERNELSCRIPTSDEBUG
+if [ -z "$KERNELSCRIPTSDEBUG" ]; then
+ KERNELSCRIPTSDEBUG="no"
+fi
+echo "*** KERNELSCRIPTSDEBUG selected is $KERNELSCRIPTSDEBUG."
+
+## KERNELSCRIPTSRT
+if [ -z "$KERNELSCRIPTSRT" ]; then
+ KERNELSCRIPTSRT="no"
 fi
 echo "*** KERNELSCRIPTSRT selected is $KERNELSCRIPTSRT."
 
-# BUILDVER
-if [ -z $BUILDVER ]; then
- BUILDVER=xmixahlx1
+## BUILDVER
+if [ -z "$BUILDVER" ]; then
+ BUILDVER="xmixahlx1"
 fi
 echo "*** BUILDVER selected is $BUILDVER."
 
-# BUILDVERBOSE
+## BUILDVERBOSE
 # options are 0, 1, or 2
-if [ -z $BUILDVERBOSE ]; then
- BUILDVERBOSE=0
+if [ -z "$BUILDVERBOSE" ]; then
+ BUILDVERBOSE="0"
 fi
 echo "*** BUILDVERBOSE selected is $BUILDVERBOSE."
 
+## MTUNE
+if [ -z "$MTUNE" ]; then
+ MTUNE="znver4"
+fi
+echo "*** MTUNE selected is $MTUNE."
+
+## KCFLAGS
+if [ -z "$KCFLAGS" ]; then
+ KCFLAGS="-O2 -march=$MTUNE -mtune=$MTUNE -Wno-error"
+fi
+echo "*** KCFLAGS selected is $KCFLAGS."
+
+## LINUXDIR
+if [ -z "$LINUXDIR" ]; then
+ LINUXDIR="/home/$USER/Development/linux"
+fi
+echo "*** LINUXDIR selected is $LINUXDIR."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
 ## VARS
-DEVDIR=$MIXTOOLSDIR/upstream
-RESDIR=$MIXTOOLSDIR/resources
-BUILDDIR=/tmp/mix-tools
+CONFIGSDIR="$LINUXDIR/CONFIGS"
+PACKAGESDIR="$LINUXDIR/PACKAGES"
+SOURCESDIR="$LINUXDIR/SOURCES"
+UPSTREAMDIR="$LINUXDIR/UPSTREAM"
 
 ## INSTALLDEPS
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y install dwarves bc flex ccache build-essential gcc g++
 fi
 
+## CLEAN
+rm -Rf "$TMPDIR/linux-upstream"
+
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$LINUXDIR"
+mkdir -p "$CONFIGSDIR"
+mkdir -p "$PACKAGESDIR"
+mkdir -p "$SOURCESDIR"
+mkdir -p "$UPSTREAMDIR"
+mkdir -p "$TMPDIR"
 
 ## DOWNLOAD
+cd "$SOURCESDIR"
 
 # Download Stable
 echo "*** Downloading base STABLEVER $STABLEVER source."
-[ -f linux-$STABLEVER.tar.gz ] || wget https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$STABLEVER.tar.gz
+[ -f "linux-$STABLEVER.tar.gz" ] || wget "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$STABLEVER.tar.gz"
 
-# Download Stable Pointversions
-if [ $BRANCH = stable ]; then
+# Download Stable Pointversion
+if [ "$BRANCH" = "stable" ]; then
  echo "*** Downloading $BRANCH branch source."
- if [ $POINTVER != none ]; then
+ if [ "$POINTVER" != "none" ]; then
   echo "*** Downloading POINTVER $POINTVER source."
-  [ -f patch-$STABLEVER.$POINTVER.xz ] || wget https://cdn.kernel.org/pub/linux/kernel/v6.x/patch-$STABLEVER.$POINTVER.xz
+  [ -f "patch-$STABLEVER.$POINTVER.xz" ] || wget "https://cdn.kernel.org/pub/linux/kernel/v6.x/patch-$STABLEVER.$POINTVER.xz"
  fi
 fi
 
 # Download Mainline Release Candidate
-if [ $BRANCH = mainline ]; then
+if [ "$BRANCH" = "mainline" ]; then
  echo "*** Processing $BRANCH branch downloads."
- if [ $RCVER != none ]; then
+ if [ "$RCVER" != "none" ]; then
   echo "*** Processing $BRANCH branch $MAINVER-rc$RCVER."
-  if [ ! -f linux-$MAINVER-rc$RCVER-$STABLEVER.patch.gz ]; then
-   rm -f linux-$MAINVER-rc$RCVER-$STABLEVER.patch
-   wget https://git.kernel.org/torvalds/p/v$MAINVER-rc$RCVER/v$STABLEVER -O linux-$MAINVER-rc$RCVER-$STABLEVER.patch
-   gzip linux-$MAINVER-rc$RCVER-$STABLEVER.patch
-   rm -f linux-$MAINVER-rc$RCVER-$STABLEVER.patch
+  if [ ! -f "linux-$MAINVER-rc$RCVER-$STABLEVER.patch.gz" ]; then
+   rm -f "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
+   wget "https://git.kernel.org/torvalds/p/v$MAINVER-rc$RCVER/v$STABLEVER" -O "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
+   gzip "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
+   rm -f "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
   fi
  fi
 fi
 
-## PREP
-mkdir -p $BUILDDIR
-cd $BUILDDIR
-
-## CLEAN
-
-# Clean stable
-if [ $BRANCH = stable ]; then
- echo "Cleaning stable root folder."
- if [ $POINTVER != none ]; then
-  echo "Cleaning root folder linux-$STABLEVER.$POINTVER."
-  rm -Rf linux-$STABLEVER.$POINTVER
- else
-  echo "Cleaning root folder linux-$STABLEVER."
-  rm -Rf linux-$STABLEVER
- fi
-fi
-
-# Clean Mainline
-if [ $BRANCH = mainline ]; then
- echo "*** Cleaning mainline root folder."
- if [ $RCVER != none ]; then
-  echo "*** Cleaning root folder linux-$MAINVER-rc$RCVER."
-  rm -Rf linux-$MAINVER-rc$RCVER
- else
-  echo "*** You broke something."
-  exit
- fi
-fi
-
 ## UNPACK
-tar xf $DEVDIR/linux-$STABLEVER.tar.gz
+cd "$TMPDIR"
+tar xf "$SOURCESDIR/linux-$STABLEVER.tar.gz"
 
-## MOVE DIR
-
-# Move Stable Pointversion
-if [ $BRANCH = stable ]; then
- echo "*** Processing stable root folder."
- if [ $POINTVER != none ]; then
-  echo "*** Moving root folder to linux-$STABLEVER.$POINTVER."
-  mv linux-$STABLEVER linux-$STABLEVER.$POINTVER
- else
-  echo "*** Not moving root folder."
- fi
-fi
-
-# mainline
-if [ $BRANCH = mainline ]; then
- echo "*** Processing mainline root folder."
- if [ $RCVER != none ]; then
-  echo "*** Moving root folder to linux-$MAINVER-rc$RCVER."
-  mv linux-$STABLEVER linux-$MAINVER-rc$RCVER
- else
-  echo "*** You broke something."
-  exit
- fi
-fi
+## RENAME DIRECTORY
+mv "linux-$STABLEVER" linux-upstream
 
 ## CHANGE DIRECTORY
-
-# Stable
-if [ $BRANCH = stable ]; then
- echo "*** Changing to stable root directory."
- if [ $POINTVER != none ]; then
-  cd linux-$STABLEVER.$POINTVER
- else
-  cd linux-$STABLEVER
- fi
-fi
-
-# Mainline
-if [ $BRANCH = mainline ]; then
- echo "*** Changing to mainline root directory."
- if [ $RCVER != none ]; then
-  cd linux-$MAINVER-rc$RCVER
- else
-  echo "*** You broke something."
-  exit
- fi
-fi
+cd linux-upstream
 
 ## PATCH
-
 # Patch stable
-if [ $BRANCH = stable ]; then
+if [ "$BRANCH" = "stable" ]; then
  echo "*** Processing stable patches."
- if [ $POINTVER != none ]; then
+ if [ "$POINTVER" != "none" ]; then
   # POINTVER PATCH
   echo "*** Applying linux-$STABLEVER.$POINTVER patch"
-  xzcat $DEVDIR/patch-$STABLEVER.$POINTVER.xz | patch -p1
+  xzcat "$SOURCESDIR/patch-$STABLEVER.$POINTVER.xz" | patch -p1
  else
   echo "*** Not applying POINTVER patch."
  fi
 fi
-
 # Patch mainline
-if [ $BRANCH = mainline ]; then
+if [ "$BRANCH" = "mainline" ]; then
  echo "*** Processing mainline patches."
- if [ $RCVER != none ]; then
+ if [ "$RCVER" != "none" ]; then
   echo "*** Applying linux-$MAINVER-rc$RCVER-$STABLEVER patch"
-  gzip -dc $DEVDIR/linux-$MAINVER-rc$RCVER-$STABLEVER.patch.gz | patch -p1
+  gzip -dc "$SOURCESDIR/linux-$MAINVER-rc$RCVER-$STABLEVER.patch.gz" | patch -p1
  else
   echo "*** Not applying RCVER patch."
  fi
 fi
 
 # KERNELPATCH
-if [ $KERNELPATCH != none ]; then
+if [ "$KERNELPATCH" != "none" ]; then
  patch -p1 < "$KERNELPATCH"
 fi
 
 ## CONFIG
-cp $KERNELCONFIG .config
+cp "$KERNELCONFIG" .config
 
 ## KERNELSCRIPTS
-if [ $KERNELSCRIPTS = yes ]; then
+if [ "$KERNELSCRIPTS" = "yes" ]; then
  ./scripts/config --set-str LOCALVERSION -$MTUNE-$BUILDVER
  ./scripts/config --set-val PREEMPT_NONE n
  ./scripts/config --set-val PREEMPT_VOLUNTARY n
@@ -293,17 +227,17 @@ if [ $KERNELSCRIPTS = yes ]; then
  ./scripts/config --set-val PREEMPT_DYNAMIC y
  ./scripts/config --set-val HZ_100 n
  ./scripts/config --set-val HZ_250 n
- ./scripts/config --set-val HZ_1000 n
- ./scripts/config --set-val HZ_300 y
- ./scripts/config --set-val CPU_FREQ_DEFAULT_GOV_PERFORMANCE y
+ ./scripts/config --set-val HZ_300 n
+ ./scripts/config --set-val HZ_1000 y
+ ./scripts/config --set-val CPU_FREQ_GOV_PERFORMANCE y
  ./scripts/config --set-val CPU_FREQ_GOV_POWERSAVE y
  ./scripts/config --set-val CPU_FREQ_GOV_USERSPACE y
  ./scripts/config --set-val CPU_FREQ_GOV_ONDEMAND y
  ./scripts/config --set-val CPU_FREQ_GOV_CONSERVATIVE y
+ ./scripts/config --set-val CPU_FREQ_DEFAULT_GOV_PERFORMANCE y
  ./scripts/config --set-val X86_AMD_PSTATE_DEFAULT_MODE 2
  ./scripts/config --set-val ZSWAP_DEFAULT_ON y
  ./scripts/config --set-val ZSWAP_SHRINKER_DEFAULT_ON y
- ./scripts/config --set-val Z3FOLD y
  ./scripts/config --set-val MODULE_COMPRESS y
  ./scripts/config --set-val MODULE_COMPRESS_ALL y
  ./scripts/config --set-val ZSWAP_ZPOOL_DEFAULT_ZSMALLOC y
@@ -315,6 +249,7 @@ if [ $KERNELSCRIPTS = yes ]; then
  ./scripts/config --set-val ZRAM_BACKEND_LZO y
  ./scripts/config --set-val ZRAM_DEF_COMP_LZO y
  ./scripts/config --set-val DRM_ACCEL y
+ ./scripts/config --set-val DRM_ACCEL_AMDXDNA m
  ./scripts/config --set-val DRM_ACCEL_IVPU m
  ./scripts/config --set-val SND_AMD_ASOC_RENOIR m
  ./scripts/config --set-val SND_AMD_ASOC_REMBRANDT m
@@ -334,18 +269,38 @@ if [ $KERNELSCRIPTS = yes ]; then
  ./scripts/config --set-val NTFS3_LZX_XPRESS y
  ./scripts/config --set-val NFS_LOCALIO y
  ./scripts/config --set-val CIFS_COMPRESSION y
+ ./scripts/config --set-val PINCTRL_AMDISP y
+ ./scripts/config --set-val ZRAM_DEF_COMP_ZSTD y
+ ./scripts/config --set-val MODULE_COMPRESS_ZSTD y
+ ./scripts/config --set-val ZSWAP_COMPRESSOR_DEFAULT_ZSTD y
+ ./scripts/config --set-val EXT4_FS y
+ ./scripts/config --set-val BTRFS_FS y
+ ./scripts/config --set-val CRYPTO_KRB5ENC m
+ ./scripts/config --set-val CRYPTO_KRB5 m
+fi
+
+## KERNELSCRIPTSDEBUG
+if [ "$KERNELSCRIPTSDEBUG" = "no" ]; then
  ./scripts/config --set-val DEBUG_MISC n
+ ./scripts/config --undefine GDB_SCRIPTS
+ ./scripts/config --undefine DEBUG_INFO
+ ./scripts/config --undefine DEBUG_INFO_SPLIT
+ ./scripts/config --undefine DEBUG_INFO_REDUCED
+ ./scripts/config --undefine DEBUG_INFO_COMPRESSED
+ ./scripts/config --disable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT
+ ./scripts/config --set-val  DEBUG_INFO_NONE       y
+ ./scripts/config --set-val  DEBUG_INFO_DWARF5     n
 fi
 
 ## KERNELSCRIPTSRT
 # Note: Starting with 6.12-rc1 RT is now in mainline
-if [ $KERNELSCRIPTSRT = yes ]; then
+if [ "$KERNELSCRIPTSRT" = "yes" ]; then
  ./scripts/config --set-str LOCALVERSION -rt-$MTUNE-$BUILDVER
  ./scripts/config --set-val PREEMPT_NONE n
  ./scripts/config --set-val PREEMPT_VOLUNTARY n
  ./scripts/config --set-val PREEMPT n
+ ./scripts/config --set-val PREEMPT_DYNAMIC n
  ./scripts/config --set-val PREEMPT_RT y
- ./scripts/config --set-val PREEMPT_DYNAMIC y
  ./scripts/config --set-val HZ_100 n
  ./scripts/config --set-val HZ_250 n
  ./scripts/config --set-val HZ_300 n
@@ -359,16 +314,13 @@ make oldconfig -j `nproc`
 make menuconfig -j `nproc`
 
 ## BUILD
-make CC="$CC" CXX="$CXX" KCFLAGS="$CFLAGS" KCPPFLAGS="$CXXFLAGS" KBUILD_VERBOSE="$BUILDVERBOSE" \
+CC="$CC" CXX="$CXX" CPP="$CPP" \
+make \
+KCFLAGS="$KCFLAGS" KCPPFLAGS="$KCFLAGS" \
+KBUILD_VERBOSE="$BUILDVERBOSE" \
 -j `nproc` bindeb-pkg
 
 ## EXIT
 exit
 
 ## ENJOY
-
-## EXAMPLE BUILD COMMAND
-make CC="ccache clang" CXX="ccache clang++" \
-KCFLAGS="-O3 -march=znver4 -mtune=znver4 -B/usr/local/libexec/mold" \
-KCPPFLAGS="-O3 -march=native -mtune=znver4 -B/usr/local/libexec/mold" \
-KBUILD_VERBOSE=0 -j `nproc` bindeb-pkg
