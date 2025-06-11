@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-linux-kernel
-### Version: v0.20250604.2300
+### Version: v0.20250605.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -56,6 +56,15 @@ if [ -z "$BRANCH" ]; then
 fi
 echo "*** BRANCH selected is $BRANCH."
 
+## SELECTEDVER
+if [ "$BRANCH" = "mainline" ]; then
+ SELECTEDVER="$MAINVER"
+fi
+if [ "$BRANCH" = "stable" ]; then
+ SELECTEDVER="$STABLEVER"
+fi
+echo "*** SELECTEDVER selected is $SELECTEDVER."
+
 ## KERNELCONFIG
 if [ -z "$KERNELCONFIG" ]; then
  KERNELCONFIG="/boot/config-`uname -r`"
@@ -85,6 +94,12 @@ if [ -z "$KERNELSCRIPTSRT" ]; then
  KERNELSCRIPTSRT="no"
 fi
 echo "*** KERNELSCRIPTSRT selected is $KERNELSCRIPTSRT."
+
+## CACHYOSPATCH
+if [ -z "$CACHYOSPATCH" ]; then
+ CACHYOSPATCH="yes"
+fi
+echo "*** CACHYOSPATCH selected is $CACHYOSPATCH."
 
 ## BUILDVER
 if [ -z "$BUILDVER" ]; then
@@ -176,6 +191,28 @@ if [ "$BRANCH" = "mainline" ]; then
  fi
 fi
 
+# Prepare CACHYOSPATCH
+if [ "$CACHYOSPATCH" = "yes" ]; then
+ # Create Git
+ cd "$UPSTREAMDIR"
+ if [ ! -d "cachyos-kernel-patches" ]; then
+  git clone https://github.com/cachyos/kernel-patches.git cachyos-kernel-patches
+ fi
+ # Update Git
+ cd cachyos-kernel-patches
+ git clean -dfx
+ git reset --hard
+ git pull
+ # Delete Old Patch
+ rm -f "$SOURCESDIR/$SELECTEDVER-cachyos-base-all-bore.patch.gz"
+ # Create Patch
+ cat "$SELECTEDVER/all/0001-cachyos-base-all.patch" "$SELECTEDVER/sched/0001-bore-cachy.patch" >\
+ "$SOURCESDIR/$SELECTEDVER-cachyos-base-all-bore.patch"
+ cd "$SOURCESDIR"
+ gzip "$SELECTEDVER-cachyos-base-all-bore.patch"
+ rm -f "$SELECTEDVER-cachyos-base-all-bore.patch"
+fi
+
 ## UNPACK
 cd "$TMPDIR"
 tar xf "$SOURCESDIR/linux-$STABLEVER.tar.gz"
@@ -207,6 +244,11 @@ if [ "$BRANCH" = "mainline" ]; then
  else
   echo "*** Not applying RCVER patch."
  fi
+fi
+# Patch CachyOS
+if [ "$CACHYOSPATCH" = "yes" ]; then
+ echo "*** Applying CachyOS all base + bore patch."
+ gzip -dc "$SOURCESDIR/$SELECTEDVER-cachyos-base-all-bore.patch.gz" | patch -p1
 fi
 
 # KERNELPATCH
@@ -292,10 +334,34 @@ if [ "$KERNELSCRIPTSDEBUG" = "no" ]; then
  ./scripts/config --set-val  DEBUG_INFO_DWARF5     n
 fi
 
+## CACHYOSPATCH
+if [ "$CACHYOSPATCH" = "yes" ]; then
+ ./scripts/config --set-str LOCALVERSION -cachyos-$MTUNE-$BUILDVER
+ ./scripts/config --set-val CACHY y
+ ./scripts/config --set-val USER_NS_UNPRIVILEGED y
+ ./scripts/config --set-val SCHED_BORE y
+ ./scripts/config --set-val CC_OPTIMIZE_FOR_PERFORMANCE y #?
+ ./scripts/config --set-val MZEN4 y #?
+ ./scripts/config --set-val HZ_500 n
+ ./scripts/config --set-val HZ_600 n
+ ./scripts/config --set-val HZ_750 n
+ ./scripts/config --set-val HZ_1000 y
+ ./scripts/config --set-val MIN_BASE_SLICE_NS 2000000
+ ./scripts/config --set-val MQ_IOSCHED_ADIOS y
+ ./scripts/config --set-val MQ_IOSCHED_DEFAULT_ADIOS y
+ ./scripts/config --set-val VHBA m
+ ./scripts/config --set-val V4L2_LOOPBACK m
+ ./scripts/config --set-val AMD_PRIVATE_COLOR y
+fi
+
 ## KERNELSCRIPTSRT
 # Note: Starting with 6.12-rc1 RT is now in mainline
 if [ "$KERNELSCRIPTSRT" = "yes" ]; then
- ./scripts/config --set-str LOCALVERSION -rt-$MTUNE-$BUILDVER
+ if [ "$CACHYOSPATCH" = "yes" ]; then
+  ./scripts/config --set-str LOCALVERSION -rt-cachyos-$MTUNE-$BUILDVER
+ else
+  ./scripts/config --set-str LOCALVERSION -rt-$MTUNE-$BUILDVER
+ fi
  ./scripts/config --set-val PREEMPT_NONE n
  ./scripts/config --set-val PREEMPT_VOLUNTARY n
  ./scripts/config --set-val PREEMPT n

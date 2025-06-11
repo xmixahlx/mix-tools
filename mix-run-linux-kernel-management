@@ -28,7 +28,7 @@ echo "*** PKGDIR selected is $PKGDIR."
 
 ## CONFIGDIR
 if [ -z "$CONFIGDIR" ]; then
- CONFIGDIR="$LINUXDIR/CONFIG"
+ CONFIGDIR="$LINUXDIR/CONFIGS"
 fi
 echo "*** CONFIGDIR selected is $CONFIGDIR."
 
