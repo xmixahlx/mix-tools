@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-run-linux-kernel-management
-### Version: v0.20250511.2300
+### Version: v0.20250610.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -26,17 +26,17 @@ if [ -z "$PKGDIR" ]; then
 fi
 echo "*** PKGDIR selected is $PKGDIR."
 
-## CONFIGDIR
-if [ -z "$CONFIGDIR" ]; then
- CONFIGDIR="$LINUXDIR/CONFIGS"
+## CONFIGSDIR
+if [ -z "$CONFIGSDIR" ]; then
+ CONFIGSDIR="$LINUXDIR/CONFIGS"
 fi
-echo "*** CONFIGDIR selected is $CONFIGDIR."
+echo "*** CONFIGSDIR selected is $CONFIGSDIR."
 
 ## ENV
 set -e
 mkdir -p "$LINUXDIR"
 mkdir -p "$PKGDIR"
-mkdir -p "$CONFIGDIR"
+mkdir -p "$CONFIGSDIR"
 
 ## INSTALL
 sudo dpkg -i "$TMPDIR"/linux-libc*.deb
@@ -49,7 +49,7 @@ cp "$TMPDIR"/*.buildinfo "$PKGDIR"
 cp "$TMPDIR"/*.changes "$PKGDIR"
 
 ## COPY CONFIGS
-cp /boot/config* "$CONFIGDIR"
+cp /boot/config* "$CONFIGSDIR"
 
 ## EXIT
 exit

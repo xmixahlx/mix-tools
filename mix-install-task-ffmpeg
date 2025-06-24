@@ -22,6 +22,7 @@ fi
 echo "*** SVTAV1VER selected is $SVTAV1VER."
 
 ## INSTALL
+mix-install-amf
 mix-install-dav1d
 mix-install-libdvbcsa
 mix-install-libdca
@@ -36,6 +37,19 @@ mix-install-libdvdread
 mix-install-libdvdcss
 mix-install-lensfun
 mix-install-vmaf
+mix-install-ogg
+mix-install-vorbis
+mix-install-vorbis-tools
+mix-install-opus
+mix-install-libopusenc
+mix-install-opusfile
+mix-install-opus-tools
+mix-install-quirc
+mix-install-speex
+mix-install-uavs3d
+mix-install-libaribcaption
+mix-install-libplacebo
+mix-install-zimg
 mix-install-svt-hevc
 # SVTAV1VER
 if [ $SVTAV1VER = PSY ];then
@@ -46,7 +60,7 @@ if [ $SVTAV1VER = PSY ];then
  mix-install-svt-av1
 fi
 mix-install-x264
-#mix-install-x265
+mix-install-x265
 mix-install-ffmpeg
 
 ## EXIT

@@ -1,0 +1,76 @@
+#!/bin/sh
+
+### Package: mix-config-linux-firmware
+### Version: v0.20250623.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## DATE
+DATE="`date +%Y%m%d%H%M%S`"
+
+## FIRMWAREDIR
+if [ -z "$FIRMWAREDIR" ]; then
+ FIRMWAREDIR="/lib/firmware"
+fi
+echo "*** FIRMWAREDIR selected is $FIRMWAREDIR."
+
+## FIRMWAREREPO
+if [ -z "$FIRMWAREREPO" ]; then
+ FIRMWAREREPO="https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git"
+fi
+echo "*** FIRMWAREREPO selected is $FIRMWAREREPO."
+
+## FIRMWAREPACKAGES
+if [ -z "$FIRMWAREPACKAGES" ]; then
+ FIRMWAREPACKAGES="firmware-linux-free firmware-linux-nonfree firmware-amd-graphics \
+firmware-ath9k-htc firmware-atheros firmware-carl9170 firmware-realtek \
+amd64-microcode intel-microcode"
+fi
+echo "*** FIRMWAREPACKAGES selected is $FIRMWAREPACKAGES."
+
+## ENV
+set -e
+
+## BACKUP FIRMWARE
+# cp instead of mv for safety
+sudo cp -R "/lib/firmware" "/lib/firmware.bak-$DATE"
+
+## PURGE
+sudo apt-get --purge remove $FIRMWAREPACKAGES
+
+## HOLD
+sudo apt-mark hold $FIRMWAREPACKAGES
+
+## REMOVE
+cd /lib
+sudo rm -Rf "/lib/firmware"
+
+## GIT
+sudo git clone --depth=1 "$FIRMWAREREPO" firmware
+
+## KNOWN FIXES
+# ATH11K
+cd "$FIRMWAREDIR/ath11k/WCN6855"
+sudo ln -s hw2.0 hw2.1
+# AMDNPU
+cd "$FIRMWAREDIR/amdnpu/1502_00"
+sudo ln -s npu.sbin.1.5.2.380 npu.sbin
+
+## REINSTALL Debian Packages
+sudo apt-get --reinstall install wireless-regdb
+
+## EXIT
+echo "*** Recommend to run mix-run-linux-firmware-management now and periodically for updates."
+echo "*** Done."
+exit
+
+## ENJOY

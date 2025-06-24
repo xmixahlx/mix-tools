@@ -1,0 +1,46 @@
+#!/bin/sh
+
+### Package: mix-run-linux-firmware-management
+### Version: v0.20250623.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## FIRMWAREDIR
+if [ -z "$FIRMWAREDIR" ]; then
+ FIRMWAREDIR="/lib/firmware"
+fi
+echo "*** FIRMWAREDIR selected is $FIRMWAREDIR."
+
+## KERNELVER
+# Options are "all" or a kernel version
+if [ -z "$KERNELVER" ]; then
+ KERNELVER="`uname -r`"
+fi
+echo "*** KERNELVER selected is $KERNELVER."
+
+## ENV
+set -e
+
+## GIT UPDATE
+echo "*** Updating linux-firmware from Git."
+cd "$FIRMWAREDIR"
+sudo git pull
+
+## RECREATE INITRD
+echo "*** Updating linux kernel initrd image(s)."
+sudo update-initramfs -c -k "$KERNELVER"
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

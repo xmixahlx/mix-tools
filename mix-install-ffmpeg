@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-ffmpeg
-### Version: v0.20250503.2300
+### Version: v0.20250623.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: svt-hevc, x265, x264, vmaf, lensfun, aribcaption, qrencode, quirc, uavs3d, vvenc
@@ -72,6 +72,16 @@ if [ "$SVTAV1PSY" = "ON" ]; then
  echo "*** SVTAV1PSY is enabled."
 fi
 
+## AV1VULKANENCODER
+# Note: currently broken with master
+if [ -z "$AV1VULKANENCODER" ]; then
+ AV1VULKANENCODER=OFF
+fi
+# Check
+if [ "$AV1VULKANENCODER" = "ON" ]; then
+ echo "*** AV1VULKANENCODER is enabled."
+fi
+
 ## VARS
 DATE="`date +%Y%m%d%H%M%S`"
 RESDIR="$MIXTOOLSDIR/resources"
@@ -114,6 +124,13 @@ if [ "$SVTAV1PSY" = "ON" ]; then
  if [ "$PKGVER" = "master" ]; then
   patch -p1 < "$RESDIR/ffmpeg/ffmpeg_svt-av1-psy_extended-crf_7.1.patch"
  fi
+fi
+
+# Support av1_vulkan encoder
+if [ "$AV1VULKANENCODER" = "ON" ]; then
+ echo "*** PATCHING ffmpeg for av1_vulkan encoder."
+ patch -p1 < "$RESDIR/ffmpeg/ffmpeg-av1_vulkan_encoder_patch_01.patch"
+ patch -p0 < "$RESDIR/ffmpeg/ffmpeg-av1_vulkan_encoder_patch_02.patch"
 fi
 
 ## CONFIGURE
