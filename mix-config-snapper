@@ -1,0 +1,99 @@
+#!/bin/sh
+
+### Package: mix-config-snapper
+### Version: v0.20250623.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## DATE
+DATE="`date +%Y%m%d%H%M%S`"
+
+## SNAPSHOTROOT
+# Options are enabled or disabled
+if [ -z "$SNAPSHOTROOT" ]; then
+ SNAPSHOTROOT="enabled"
+fi
+echo "*** SNAPSHOTROOT is $SNAPSHOTROOT."
+
+## SNAPSHOTHOME
+# Options are enabled or disabled
+if [ -z "$SNAPSHOTHOME" ]; then
+ SNAPSHOTHOME="enabled"
+fi
+echo "*** SNAPSHOTHOME is $SNAPSHOTHOME."
+
+## ENV
+set -e
+
+## PROCESS ROOT
+if [ "$SNAPSHOTROOT" = "enabled" ]; then
+ echo "*** Processing / (root) snapper config."
+ ## SNAPPER
+ if [ ! -f "/etc/snapper/configs/root" ]; then
+  if [ -d "/.snapshots" ]; then
+   sudo mv "/.snapshots" "/.snapshots.bak-$DATE"
+  fi
+  sudo snapper -c root create-config /
+
+  ## CHMOD
+  sudo chmod 750 "/.snapshots"
+
+  ## CONFIGURE
+  sudo snapper -c root set-config TIMELINE_LIMIT_HOURLY="24"
+  sudo snapper -c root set-config TIMELINE_LIMIT_DAILY="7"
+  sudo snapper -c root set-config TIMELINE_LIMIT_WEEKLY="4"
+  sudo snapper -c root set-config TIMELINE_LIMIT_MONTHLY="12"
+  sudo snapper -c root set-config TIMELINE_LIMIT_QUARTERLY="0"
+  sudo snapper -c root set-config TIMELINE_LIMIT_YEARLY="7"
+ else
+  echo "*** SNAPSHOTROOT configuration already exists. Skipping."
+ fi
+else
+ "*** SNAPSHOTROOT is not enabled."
+fi
+
+## PROCESS HOME
+if [ "$SNAPSHOTHOME" = "enabled" ]; then
+ echo "*** Processing /home snapper config."
+ # SNAPPER
+ if [ ! -f "/etc/snapper/configs/home" ]; then
+  if [ -d "/home/.snapshots" ]; then
+   sudo mv "/home/.snapshots" "/home/.snapshots.bak-$DATE"
+  fi
+  sudo snapper -c home create-config /home
+
+  # CHMOD
+  sudo chmod 750 "/home/.snapshots"
+
+  ## CONFIGURE
+
+  sudo snapper -c home set-config TIMELINE_LIMIT_HOURLY="24"
+  sudo snapper -c home set-config TIMELINE_LIMIT_DAILY="7"
+  sudo snapper -c home set-config TIMELINE_LIMIT_WEEKLY="4"
+  sudo snapper -c home set-config TIMELINE_LIMIT_MONTHLY="12"
+  sudo snapper -c home set-config TIMELINE_LIMIT_QUARTERLY="0"
+  sudo snapper -c home set-config TIMELINE_LIMIT_YEARLY="7"
+ else
+  echo "*** SNAPSHOTHOME configuration already exists. Skipping."
+ fi
+else
+ "*** SNAPSHOTHOME is not enabled."
+fi
+
+## ENABLE TIMERS
+echo "*** Enabling systemctl timers."
+sudo systemctl enable --now snapper-timeline.timer
+sudo systemctl enable --now snapper-cleanup.timer
+
+## RESTART SERVICE
+echo "*** Restarting snapperd service."
+sudo systemctl restart --now snapperd.service
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY
