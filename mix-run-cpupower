@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-run-cpupower
-### Version: v0.20250511.2300
+### Version: v0.20250629.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -46,7 +46,7 @@ if [ "$PRESET" = "balanced" ]; then
   POWERPROFILESPANEL="enable"
   POWERPROFILESDPM="disable"
  fi
- BACKLIGHT="15"
+ BACKLIGHT="20"
 fi
 # Powersave
 if [ "$PRESET" = "powersave" ]; then
@@ -63,7 +63,7 @@ fi
 echo "*** PRESET selected is $PRESET." | tee -a "$LOGFILE"
 
 ## CPUGOV
-# Configured options are performance, ondemand, conservative, and powersave.
+# Configured options are performance, ondemand, and powersave.
 # Default is performance governor.
 if [ -z "$CPUGOV" ]; then
  CPUGOV="performance"
@@ -124,7 +124,7 @@ echo "*** POWERPROFILESDPM selected is $POWERPROFILESDPM." | tee -a "$LOGFILE"
 # Provide a value in percentage (1-100).
 # Default is 25.
 if [ -z "$BACKLIGHT" ]; then
- BACKLIGHT="25"
+ BACKLIGHT="30"
 fi
 echo "*** BACKLIGHT selected is $BACKLIGHT." | tee -a "$LOGFILE"
 

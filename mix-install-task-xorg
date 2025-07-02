@@ -1,0 +1,38 @@
+#! /bin/sh
+
+### Package: mix-install-task-xorg
+### Version: v0.20250629.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## OVERRIDES
+# MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ export MIXTOOLSDIR="/home/$USER/Development/XMIXAHLX/mix-tools"
+ export PATH="$MIXTOOLSDIR:$PATH"
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+# XORGGPU
+# Options are amdgpu, intel, or nouveau
+if [ -z "$XORGGPU" ]; then
+ XORGGPU="amdgpu"
+fi
+echo "*** XORGGPU selected is $XORGGPU."
+
+## INSTALL
+mix-install-libxcursor
+mix-install-libxcvt
+mix-install-xserver-xorg
+mix-install-xinit
+mix-install-xf86-input-evdev
+mix-install-xf86-input-libinput
+mix-install-xf86-video-fbdev
+mix-install-xf86-video-$XORGGPU
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

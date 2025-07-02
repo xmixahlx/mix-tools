@@ -35,8 +35,8 @@ echo "*** DESTDIR selected is $DESTDIR."
 
 # CC
 # Broken with ccache
-CC="gcc-14"
-CXX="g++-14"
+#CC="gcc-14"
+#CXX="g++-14"
 #echo "*** CC selected is $CC."
 #echo "*** CXX selected is $CXX."
 

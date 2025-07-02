@@ -1,0 +1,49 @@
+#!/bin/sh
+
+### Package: mix-run-btrfs-subvolume-list
+### Version: v0.20250629.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## DATE
+DATE="`date +%Y%m%d%H%M%S`"
+
+## LISTROOT
+# Options are enabled or disabled
+if [ -z "$LISTROOT" ]; then
+ LISTROOT="enabled"
+fi
+echo "*** LISTROOT is $LISTROOT."
+
+## LISTHOME
+# Options are enabled or disabled
+if [ -z "$LISTHOME" ]; then
+ LISTHOME="enabled"
+fi
+echo "*** LISTHOME is $LISTHOME."
+
+## ENV
+set -e
+
+## PROCESS ROOT
+if [ "$LISTROOT" = "enabled" ]; then
+ echo "*** Processing / (root) btrfs subvolume list."
+ ## BTRFS
+ sudo btrfs subvolume list -apcguqst /
+fi
+
+## PROCESS HOME
+if [ "$LISTHOME" = "enabled" ]; then
+ echo "*** Processing /home btrfs subvolume list."
+ # BTRFS
+ sudo btrfs subvolume list -apcguqst /home
+fi
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

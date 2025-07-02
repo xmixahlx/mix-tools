@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-spirv-llvm
-### Version: v0.20250503.2300
+### Version: v0.20250629.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -21,9 +21,9 @@ fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
 # GITBRANCH
-# Upstream is "main" and release branches use "llvm_release_???" like "llvm_release_190".
+# Upstream is "main" and release branches use "llvm_release_???" like "llvm_release_200".
 if [ -z "$GITBRANCH" ]; then
- GITBRANCH="llvm_release_200"
+ GITBRANCH="main"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
@@ -34,16 +34,16 @@ fi
 echo "*** DESTDIR selected is $DESTDIR."
 
 # LLVMVER
-# Options include 20, 19, etc.
+# Options include 21, 20, etc.
 if [ -z "$LLVMVER" ]; then
- LLVMVER="20"
+ LLVMVER="21"
 fi
 echo "*** LLVMVER selected is $LLVMVER."
 
 # LLVMVERFULL
-# Options include 20.1.4, etc.
+# Options include 21.0.0, 20.1.4, etc.
 if [ -z "$LLVMVERFULL" ]; then
- LLVMVERFULL="20.1.4"
+ LLVMVERFULL="21.0.0"
 fi
 echo "*** LLVMVERFULL selected is $LLVMVERFULL."
 

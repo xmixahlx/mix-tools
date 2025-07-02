@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-alsa-python
-### Version: v20240811.2300
+### Version: v0.20250629.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -64,6 +64,9 @@ fi
 set -e
 mkdir -p $DEVDIR
 cd $DEVDIR
+
+## CLEAN
+sudo rm -Rf "$PKGDIR/dist" "$PKGDIR/pyalsa.egg-info"
 
 ## GIT
 [ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO.git --branch=$GITBRANCH $PKGDIR

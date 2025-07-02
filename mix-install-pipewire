@@ -21,9 +21,9 @@ fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
 # GITBRANCH
-# Upstream branch is "master"
+# Upstream branch is "master" and release branches are "X.Y".
 if [ -z $GITBRANCH ]; then
- GITBRANCH=1.4
+ GITBRANCH=master
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 

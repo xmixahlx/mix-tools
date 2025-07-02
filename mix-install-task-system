@@ -1,0 +1,79 @@
+#! /bin/bash
+
+### Package: mix-install-task-system
+### Version: v0.20250623.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### ENVIRONMENT
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ export MIXTOOLSDIR="~/Development/XMIXAHLX/mix-tools"
+ export PATH="$MIXTOOLSDIR":"$PATH"
+fi
+
+## INSTALL
+# build
+mix-install-mold
+mix-install-meson
+mix-install-ninja-build
+mix-install-nasm
+# system
+mix-install-zlib-ng
+mix-install-libsigcpp
+mix-install-libjxl
+# wayland
+mix-install-wayland
+mix-install-wayland-protocols
+mix-install-wayland-utils
+# xorg
+mix-install-libpciaccess
+mix-install-libdrm
+mix-install-xcbproto
+mix-install-xcb-errors
+mix-install-xorgproto
+# acceleration
+mix-install-libva
+mix-install-libva-utils
+mix-install-onevpl
+mix-install-v4l-utils
+# opencl
+mix-install-opencl-headers
+mix-install-opencl-icd-loader
+mix-install-opencl-clhpp
+# spirv
+# glslang broken with lto
+CFLAGS="$GNUCFLAGSNOLTO" CXXFLAGS="$GNUCFLAGSNOLTO" CPPFLAGS="$GNUCFLAGSNOLTO" \
+mix-install-glslang
+mix-install-spirv-headers
+mix-install-spirv-tools
+mix-install-spirv-reflect
+mix-install-spirv-llvm
+mix-install-spirv-cross
+# vulkan
+mix-install-vulkan-headers
+# vulkan-loader broken with ccache
+CC="gcc" CXX="g++" CPP="g++ -E" \
+mix-install-vulkan-loader
+mix-install-vulkan-utility-libraries
+mix-install-vulkan-validationlayers
+mix-install-vulkan-extensionlayer
+mix-install-vulkan-tools
+# mesa
+mix-install-mesa
+# xdg
+mix-install-xdg-desktop-portal
+mix-install-xdg-desktop-portal-gtk
+mix-install-qpwgraph
+mix-install-pwvucontrol
+# misc
+mix-install-mission-center
+mix-install-resources
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

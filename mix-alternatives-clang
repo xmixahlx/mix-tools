@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-alternatives-clang
-### Version: v20241201.2300
+### Version: v0.20250629.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -28,7 +28,7 @@ echo "*** DEBIANREPO selected is $DEBIANREPO."
 
 # PKGVER
 if [ -z $PKGVER ]; then
- PKGVER=20
+ PKGVER=21
 fi
 echo "*** PKGVER selected is $PKGVER."
 
@@ -50,6 +50,7 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 18
  sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 19
  sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-20 20
+ sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-21 21
  sudo update-alternatives --install /usr/bin/clang clang /opt/rocm-current/llvm/bin/clang 996
  sudo update-alternatives --install /usr/bin/clang clang /opt/llvm-current/bin/clang 997
  sudo update-alternatives --install /usr/bin/clang clang /usr/local/llvm-current/bin/clang 998
@@ -62,6 +63,7 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 18
  sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 19
  sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-20 20
+ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-21 21
  sudo update-alternatives --install /usr/bin/clang++ clang++ /opt/rocm-current/llvm/bin/clang++ 996
  sudo update-alternatives --install /usr/bin/clang++ clang++ /opt/llvm-current/bin/clang++ 997
  sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/local/llvm-current/bin/clang++ 998
@@ -74,6 +76,7 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-18 18
  sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-19 19
  sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-20 20
+ sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-21 21
  sudo update-alternatives --install /usr/bin/clang-format clang-format /opt/rocm-current/llvm/bin/clang-format 996
  sudo update-alternatives --install /usr/bin/clang-format clang-format /opt/llvm-current/bin/clang-format 997
  sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/local/llvm-current/bin/clang-format 998
@@ -86,6 +89,7 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/clang-format-diff clang-format-diff /usr/bin/clang-format-diff-18 18
  sudo update-alternatives --install /usr/bin/clang-format-diff clang-format-diff /usr/bin/clang-format-diff-19 19
  sudo update-alternatives --install /usr/bin/clang-format-diff clang-format-diff /usr/bin/clang-format-diff-20 20
+ sudo update-alternatives --install /usr/bin/clang-format-diff clang-format-diff /usr/bin/clang-format-diff-21 21
  sudo update-alternatives --install /usr/bin/clang-format-diff clang-format-diff /opt/rocm-current/llvm/bin/clang-format 996
  sudo update-alternatives --install /usr/bin/clang-format-diff clang-format-diff /opt/llvm-current/bin/clang-format 997
  sudo update-alternatives --install /usr/bin/clang-format-diff clang-format-diff /usr/local/llvm-current/bin/clang-format 998
@@ -98,6 +102,7 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-18 18
  sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-19 19
  sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-20 20
+ sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-21 21
  sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /opt/rocm-current/llvm/bin/clang-tidy 996
  sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /opt/llvm-current/bin/clang-tidy 997
  sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/local/llvm-current/bin/clang-tidy 998
@@ -110,6 +115,7 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/clang-tidy-diff clang-tidy-diff /usr/bin/clang-tidy-diff-18.py 18
  sudo update-alternatives --install /usr/bin/clang-tidy-diff clang-tidy-diff /usr/bin/clang-tidy-diff-19.py 19
  sudo update-alternatives --install /usr/bin/clang-tidy-diff clang-tidy-diff /usr/bin/clang-tidy-diff-20.py 20
+ sudo update-alternatives --install /usr/bin/clang-tidy-diff clang-tidy-diff /usr/bin/clang-tidy-diff-21.py 21
  sudo update-alternatives --install /usr/bin/clang-tidy-diff clang-tidy-diff /opt/rocm-current/llvm/bin/clang-tidy 996
  sudo update-alternatives --install /usr/bin/clang-tidy-diff clang-tidy-diff /opt/llvm-current/bin/clang-tidy 997
  sudo update-alternatives --install /usr/bin/clang-tidy-diff clang-tidy-diff /usr/local/llvm-current/bin/clang-tidy 998

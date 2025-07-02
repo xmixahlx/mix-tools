@@ -1,0 +1,60 @@
+#!/bin/sh
+
+### Package: mix-config-btrfs-compress
+### Version: v0.20250629.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## COMPRESSROOT
+# Options are enabled or (other)
+if [ -z "$COMPRESSROOT" ]; then
+ COMPRESSROOT="enabled"
+fi
+echo "*** COMPRESSROOT is $COMPRESSROOT."
+
+## COMPRESSHOME
+# Options are enabled or (other)
+if [ -z "$COMPRESSHOME" ]; then
+ COMPRESSHOME="enabled"
+fi
+echo "*** COMPRESSHOME is $COMPRESSHOME."
+
+## COMPRESSOR
+# Options are zlib or zstd.
+if [ -z "$COMPRESSOR" ]; then
+ COMPRESSOR="zstd"
+fi
+
+## COMPRESSORLEVEL
+# Options are zlib: 1 to 9; zstd: -15 to 15, with 0 selecting default.
+if [ -z "$COMPRESSORLEVEL" ]; then
+ COMPRESSORLEVEL="1"
+fi
+
+## ENV
+set -e
+
+## PROCESS ROOT
+if [ "$COMPRESSROOT" = "enabled" ]; then
+ echo "*** Processing / (root)."
+ sudo btrfs filesystem defragment -r -c"$COMPRESSOR" -L "$COMPRESSORLEVEL" /
+else
+ echo "*** COMPRESSROOT is not enabled."
+fi
+
+## PROCESS HOME
+if [ "$COMPRESSHOME" = "enabled" ]; then
+ echo "*** Processing /home (home)."
+ sudo btrfs filesystem defragment -r -c"$COMPRESSOR" -L "$COMPRESSORLEVEL" /home
+else
+ echo "*** COMPRESSHOME is not enabled."
+fi
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

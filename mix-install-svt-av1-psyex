@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### Package: mix-install-svt-av1-psy
+### Package: mix-install-svt-av1-psyex
 ### Version: v0.20250629.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
@@ -22,7 +22,7 @@ fi
 ## GITBRANCH
 # upstream branch is "master"
 if [ -z "$GITBRANCH" ]; then
- GITBRANCH="master"
+ GITBRANCH="testing"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
@@ -57,9 +57,9 @@ echo "*** HDR10PLUS selected is $HDR10PLUS."
 RESDIR="$MIXTOOLSDIR/resources"
 DEVDIR="$MIXTOOLSDIR/upstream"
 GITURL="https://github.com"
-GITREPO="psy-ex"
-GITTREE="svt-av1-psy"
-PKGDIR="$GITTREE-$GITBRANCH"
+GITREPO="blueswordm"
+GITTREE="svt-av1-psyex"
+PKGDIR="$GITTREE_$GITBRANCH"
 MULTILIBDIR="`gcc -dumpmachine`"
 
 ## INSTALLDEPS

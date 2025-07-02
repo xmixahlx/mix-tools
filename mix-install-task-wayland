@@ -1,0 +1,38 @@
+#!/bin/bash
+
+### Package: mix-install-task-wayland
+### Version: v0.20250629.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## ENVIRONMENT
+# MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ export MIXTOOLSDIR="`pwd`"
+ export PATH="$MIXTOOLSDIR":"$PATH"
+fi
+
+## INSTALL
+mix-install-xkbcommon
+mix-install-xwayland
+mix-install-wlroots
+mix-install-weston
+# waybar depends on libiniparser and cava
+mix-install-libiniparser
+# cava broken with lto
+CFLAGS="$GNUCFLAGSNOLTO" CXXFLAGS="$GNUCFLAGSNOLTO" CPPFLAGS="$GNUCFLAGSNOLTO" \
+mix-install-cava
+mix-install-waybar
+mix-install-wlogout
+mix-install-xdg-desktop-portal-wlr
+mix-install-dmenu-wayland
+mix-install-kanshi
+mix-install-grim
+mix-install-slurp
+mix-install-mako
+
+## EXIT
+exit
+
+## ENJOY

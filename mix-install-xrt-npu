@@ -1,7 +1,7 @@
 #!/bin/sh
 
-### Package: mix-install-xrt
-### Version: v202406121.2300
+### Package: mix-install-xrt-npu
+### Version: v0.20250629.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: rapidjson
@@ -27,13 +27,6 @@ if [ -z $GITBRANCH ]; then
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
-# CC
-# gcc-14 is not yet supported
-#CC="ccache gcc-14"
-#CXX="ccache g++-14"
-#echo "*** CC selected is $CC."
-#echo "*** CXX selected is $CXX."
-
 ## VARS
 RESDIR=$MIXTOOLSDIR/resources
 DEVDIR=$MIXTOOLSDIR/upstream
@@ -56,7 +49,7 @@ mkdir -p $DEVDIR
 cd $DEVDIR
 
 ## CLEAN
-rm -Rf Release/xrt*xrt.deb
+rm -Rf $PKGDIR/build/Release
 
 ## GIT
 [ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
@@ -80,12 +73,14 @@ patch -p1 src/CMake/cpackLin.cmake < $RESDIR/xrt/xrt_disable_ubuntu_23.10_check.
 
 ## BUILD
 cd build
-#./build.sh -opt -noert -noalveo
 ./build.sh -opt -npu
 
 ## INSTALL
-echo "Install xrt*xrt.deb file from $RESDIR."
-sudo dpkg -i Release/xrt*xrt.deb
+echo "Install xrt Debian packages."
+sudo dpkg -i Release/xrt*base.deb
+sudo dpkg -i Release/xrt*base-dev.deb
+sudo dpkg -i Release/xrt*npu.deb
+sudo dpkg -i Release/xrt*Runtime.deb
 
 ## EXIT
 exit

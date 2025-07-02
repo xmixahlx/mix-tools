@@ -1,0 +1,28 @@
+#! /bin/sh
+
+### Package: mix-install-task-sway
+### Version: v0.20250629.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## OVERRIDES
+# MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ export MIXTOOLSDIR="~/Development/XMIXAHLX/mix-tools"
+ export PATH="$MIXTOOLSDIR":"$PATH"
+fi
+echo "*** MIXTOOLSDIR selected is "$MIXTOOLSDIR"."
+
+## INSTALL
+mix-install-fontawesome
+mix-install-sway
+mix-install-swaybg
+mix-install-swayidle
+mix-install-swaylock
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-run-linux-firmware-management
-### Version: v0.20250623.2300
+### Version: v0.20250629.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -14,6 +14,9 @@ if [ -z "$TMPDIR" ]; then
 fi
 echo "*** TMPDIR selected is $TMPDIR."
 
+## DATE
+DATE="`date +%Y%m%d%H%M%S`"
+
 ## FIRMWAREDIR
 if [ -z "$FIRMWAREDIR" ]; then
  FIRMWAREDIR="/lib/firmware"
@@ -21,8 +24,12 @@ fi
 echo "*** FIRMWAREDIR selected is $FIRMWAREDIR."
 
 ## KERNELVER
-# Options are "all" or a kernel version
+# Options are all, current, or a kernel version.
 if [ -z "$KERNELVER" ]; then
+ KERNELVER="all"
+fi
+# current
+if [ "$KERNELVER" = "current" ]; then
  KERNELVER="`uname -r`"
 fi
 echo "*** KERNELVER selected is $KERNELVER."
@@ -34,6 +41,10 @@ set -e
 echo "*** Updating linux-firmware from Git."
 cd "$FIRMWAREDIR"
 sudo git pull
+
+## BACKUP
+cd /boot
+for INITRDIMG in initrd.img*; do sudo cp $INITRDIMG .$INITRDIMG.bak;done
 
 ## RECREATE INITRD
 echo "*** Updating linux kernel initrd image(s)."

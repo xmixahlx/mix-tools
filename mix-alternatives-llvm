@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-alternatives-llvm
-### Version: v20241201.2300
+### Version: v0.20250629.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -28,7 +28,7 @@ echo "*** DEBIANREPO selected is $DEBIANREPO."
 
 # PKGVER
 if [ -z $PKGVER ]; then
- PKGVER=20
+ PKGVER=21
 fi
 echo "*** PKGVER selected is $PKGVER."
 
@@ -49,6 +49,7 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-18 18
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-19 19
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-20 20
+ sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-21 21
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /opt/rocm-current/llvm/bin/llvm-config 990
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /opt/llvm-current/bin/llvm-config 997
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/local/llvm-upstream/bin/llvm-config 998
