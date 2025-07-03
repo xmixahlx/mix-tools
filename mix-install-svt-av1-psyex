@@ -59,7 +59,7 @@ DEVDIR="$MIXTOOLSDIR/upstream"
 GITURL="https://github.com"
 GITREPO="blueswordm"
 GITTREE="svt-av1-psyex"
-PKGDIR="$GITTREE_$GITBRANCH"
+PKGDIR="$GITTREE-$GITBRANCH"
 MULTILIBDIR="`gcc -dumpmachine`"
 
 ## INSTALLDEPS

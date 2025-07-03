@@ -59,7 +59,7 @@ DEVDIR="$MIXTOOLSDIR/upstream"
 GITURL="https://github.com"
 GITREPO="juliobbv-p"
 GITTREE="svt-av1-hdr"
-PKGDIR="$GITTREE_$GITBRANCH"
+PKGDIR="$GITTREE-$GITBRANCH"
 MULTILIBDIR="`gcc -dumpmachine`"
 
 ## INSTALLDEPS
