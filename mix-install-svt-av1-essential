@@ -1,0 +1,138 @@
+#!/bin/sh
+
+### Package: mix-install-svt-av1-essential
+### Version: v0.20251217.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: dovi hdr10plus
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## ESSENTIALVER
+if [ -z "$ESSENTIALVER" ]; then
+ ESSENTIALVER="v3.1.2"
+fi
+echo "*** ESSENTIALVER selected is $ESSENTIALVER."
+
+## GITBRANCH
+# There is no upstream branch. Releases are tagged "v#.#.#-Essential".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="Essential-$ESSENTIALVER"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local/svt-av1-essential-$ESSENTIALVER"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+## AVX512
+# options are off or on
+if [ -z "$AVX512" ]; then
+ AVX512="ON"
+fi
+echo "*** AVX512 selected is $AVX512."
+
+## SVTAV1LTO
+# options are off or on
+if [ -z "$SVTAV1LTO" ]; then
+ SVTAV1LTO="ON"
+fi
+echo "*** SVTAV1LTO selected is $SVTAV1LTO."
+
+# DOVI
+# options are off or on
+if [ -z "$DOVI" ]; then
+ DOVI="1"
+fi
+echo "*** DOVI selected is $DOVI."
+
+# HDR10PLUS
+# options are off or on
+if [ -z "$HDR10PLUS" ]; then
+ HDR10PLUS="1"
+fi
+echo "*** HDR10PLUS selected is $HDR10PLUS."
+
+# FFMS2PATCH
+# options are OFF or ON
+if [ -z "$FFMS2PATCH" ]; then
+ FFMS2PATCH="ON"
+fi
+echo "*** FFMS2PATCH selected is $FFMS2PATCH."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="nekotrix"
+GITTREE="svt-av1-essential"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## INSTALLDEPS
+# Debian Dependencies
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y build-dep svt-av1
+ sudo apt-get -y install build-essential coreutils libc-bin git cmake
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## CLEAN
+rm -Rf "$PKGDIR/tmpbuild"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## FFMS2PATCH
+if [ "$FFMS2PATCH" = "ON" -a "$GITBRANCH" = "Essential-v3.1.2" ]; then
+ patch -p1 < "$RESDIR/svt-av1-essential/ffms2_v3_PSYfeat.patch"
+fi
+
+## CONFIGURE
+cmake -DCMAKE_INSTALL_PREFIX="$DESTDIR" -DCMAKE_BUILD_TYPE="$BUILDTYPE" \
+-DCMAKE_INSTALL_LIBDIR="$DESTDIR/lib/$MULTILIBDIR" \
+-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+-DLIBDOVI_FOUND="$DOVI" -DLIBHDR10PLUS_RS_FOUND="$HDR10PLUS" \
+-DUSE_FFMS2="$FFMS2PATCH" \
+-DSVT_AV1_LTO="$SVTAV1LTO" -DENABLE_AVX512="$AVX512" -B tmpbuild -G Ninja
+
+## BUILD
+ninja -C tmpbuild
+
+## INSTALL
+sudo ninja -C tmpbuild install
+sudo ldconfig
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

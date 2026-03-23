@@ -1,81 +1,81 @@
 #!/bin/sh
 
 ### Package: mix-install-mpv
-### Version: v20240831.2300
+### Version: v0.20251030.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
 fi
-echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
-echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
-if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+## GITBRANCH
+# Upstream branch is "master".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
-# DESTDIR
-if [ -z $DESTDIR ]; then
- DESTDIR=/usr/local
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
-# DESTDIR
-if [ -z $BUILDTYPE ]; then
- BUILDTYPE=release
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
 fi
 echo "*** BUILDTYPE selected is $BUILDTYPE."
 
 ## VARS
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=$MIXTOOLSDIR/upstream
-GITURL=https://github.com
-GITREPO=mpv-player
-GITTREE=mpv
-PKGDIR=$GITTREE\_$GITBRANCH
-MULTILIBDIR=`gcc -dumpmachine`
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="mpv-player"
+GITTREE="mpv"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
 
-## DEPS
-# Provide INSTALLDEPS=debian to install dependencies for debian.
-if [ $INSTALLDEPS = debian ]; then
+### INSTALLDEPS
+# Debian
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y build-dep mpv
- sudo apt-get -y install build-essential coreutils libc-bin git meson \
+ sudo apt-get -y install build-essential coreutils libc-bin git
  rst2pdf libopenal-dev
 fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
-
-## CLEAN
-sudo rm -Rf $PKGDIR/tmpbuild
+mkdir -p "$DEVDIR"
+mkdir -p "$TMPDIR/$PKGDIR"
+cd "$DEVDIR"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
 git reset --hard
 git pull
-git submodule update --init --recursive --depth=1
+git submodule update --init
 
 ## CONFIGURE
-meson tmpbuild --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR --buildtype=$BUILDTYPE \
--Dlibmpv=true -Dcdda=enabled -Ddvdnav=enabled -Dsdl2=enabled -Dopenal=enabled \
--Dgl-x11=enabled -Dhtml-build=enabled -Dpdf-build=enabled
-# -Dfuzzers=true conflicts with libmpv=true
+meson setup tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype="$BUILDTYPE"
 
 ## BUILD
 ninja -C tmpbuild
@@ -85,6 +85,5 @@ sudo ninja -C tmpbuild install
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
-
-## ENJOY

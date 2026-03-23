@@ -74,7 +74,9 @@ git pull
 git submodule update --init --recursive --depth=1
 
 ## FOCUSRITE PATCH
-patch -p1 < $RESDIR/alsa-ucm-conf/ucm-focusrite-patch-20240415.patch
+if [ "$FOCUSRITEPATCH" = "ON" ]; then
+ patch -p1 < $RESDIR/alsa-ucm-conf/ucm-focusrite-patch-20240415.patch
+fi
 
 ## INSTALL
 sudo cp -Rf ucm /usr/share/alsa/

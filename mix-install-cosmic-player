@@ -24,9 +24,9 @@ fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
 # GITPR
-# PR 20 currently required
+# PR 20 previously required *CHECK*
 if [ -z $GITPR ]; then
- GITPR=20
+ GITPR=none
 fi
 echo "*** GITPR selected is $GITPR."
 
@@ -35,6 +35,12 @@ if [ -z $DESTDIR ]; then
  DESTDIR=/usr
 fi
 echo "*** DESTDIR selected is $DESTDIR."
+
+## RUSTVER
+if [ -z $RUSTVER ]; then
+ RUSTVER="stable"
+fi
+echo "*** RUSTVER selected is $RUSTVER."
 
 ## VARS
 RESDIR=$MIXTOOLSDIR/resources
@@ -76,6 +82,9 @@ if [ $GITPR != none ]; then
  wget $GITPRPATCH -O $DEVDIR/$GITTREE\_$GITPR.patch
  patch -p1 < $DEVDIR/$GITTREE\_$GITPR.patch
 fi
+
+## SET RUST VERSION
+rustup override set "$RUSTVER"
 
 ## BUILD
 cargo build --release

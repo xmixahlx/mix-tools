@@ -1,0 +1,78 @@
+#!/bin/sh
+
+### Package: mix-install-bluray-id
+### Version: v0.20251230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+## GITBRANCH
+# Upstream branch is "master". Releases are tagged "#.#".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="beandog"
+GITTREE="bluray_id"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## INSTALLDEPS
+# Debian Dependencies
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## CLEAN
+rm -Rf "$PKGDIR/tmpbuild"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --recursive --depth=100
+
+## BUILD
+make -j `nproc`
+
+## INSTALL
+sudo make install
+sudo ldconfig
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

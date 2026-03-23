@@ -1,0 +1,13 @@
+diff --git a/src/ssimu2/main.hpp b/src/ssimu2/main.hpp
+index 3dc28c5..31ad176 100644
+--- a/src/ssimu2/main.hpp
++++ b/src/ssimu2/main.hpp
+@@ -144,7 +144,7 @@ double ssimu2process(const uint8_t *srcp1[3], const uint8_t *srcp2[3], float3* p
+         throw e;
+     }
+ 
+-    hipFreeAsync(mem_d, stream);
++    hipFree(mem_d);
+ 
+     return res;
+ }

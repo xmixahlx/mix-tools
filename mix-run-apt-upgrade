@@ -1,0 +1,43 @@
+#!/bin/sh
+
+### Package: mix-run-apt-upgrade
+### Version: v0.20250916.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## ENV
+set -e
+
+## Update
+echo "*** Updating."
+sudo apt-get --assume-yes update
+
+## Fix
+echo "*** Fixing."
+sudo dpkg --configure -a
+sudo apt-get --assume-yes install --fix-missing
+
+## Upgrade
+echo "*** Upgrading."
+sudo apt-get --assume-yes --with-new-pkgs upgrade
+
+## Dist-Upgrade
+echo "*** Dist Upgrading."
+sudo apt-get dist-upgrade
+
+## Autoremove
+echo "*** Auto Removing."
+sudo apt-get autoremove
+
+## Clean
+echo "*** Cleaning."
+sudo apt-get --assume-yes clean
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

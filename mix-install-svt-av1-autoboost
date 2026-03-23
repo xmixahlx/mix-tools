@@ -1,0 +1,81 @@
+#!/bin/sh
+
+### Package: mix-install-svt-av1-autoboost
+### Version: v0.20250916.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: dovi hdr10plus
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+# Upstream branch is "main".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="nekotrix"
+GITTREE="auto-boost-algorithm"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## INSTALLDEPS
+# Debian Dependencies
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## PATCH
+if [ "$PATCH" = "ON" ]; then
+ patch -p1 < "$RESDIR/auto-boost/numStream_patch5.patch"
+fi
+
+## INSTALL
+sudo install -D -m 755 auto-boost_1.0.py "$DESTDIR/bin/auto-boost_1.0.py"
+sudo install -D -m 755 auto-boost_2.0.py "$DESTDIR/bin/auto-boost_2.0.py"
+sudo install -D -m 755 auto-boost_2.5.py "$DESTDIR/bin/auto-boost_2.5.py"
+sudo install -D -m 755 Auto-Boost-Essential/Auto-Boost-Essential.py "$DESTDIR/bin/auto-boost-essential.py"
+sudo install -D -m 644 README.md "$DESTDIR/share/doc/auto-boost/README.md"
+sudo install -D -m 644 Auto-Boost-Essential/README.md "$DESTDIR/share/doc/auto-boost-essential/README.md"
+
+## EXIT
+echo "*** Done."
+exit
+
+
+## ENJOY

@@ -1,0 +1,90 @@
+#!/bin/sh
+
+### Package: mix-install-keydbcfg
+### Version: v0.20260109.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## KEYDBFILE
+if [ -z "$KEYDBFILE" ]; then
+ KEYDBFILE="keydb.cfg"
+fi
+echo "*** KEYDBFILE = $KEYDBFILE."
+
+## SOURCEFILE
+if [ -z "$SOURCEFILE" ]; then
+ SOURCEFILE="keydb_eng.zip"
+fi
+echo "*** SOURCEFILE = $SOURCEFILE."
+
+## SOURCEURL
+if [ -z "$SOURCEURL" ]; then
+ SOURCEURL="http://fvonline-db.bplaced.net/export"
+fi
+echo "*** SOURCEURL = $SOURCEURL."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp"
+fi
+echo "*** TMPDIR = $TMPDIR."
+
+## INSTALLDIR
+if [ -z "$INSTALLDIR" ]; then
+ INSTALLDIR="/etc/xdg/aacs"
+fi
+echo "*** INSTALLDIR = $INSTALLDIR."
+
+## USERDIR
+if [ -z "$USERDIR" ]; then
+ USERDIR="/home/$USER/.config/aacs"
+fi
+echo "*** USERDIR = $USERDIR."
+
+### RUN
+
+## ENVIRONMENT
+set -e
+mkdir -p "$TMPDIR"
+# INSTALLDIR
+if [ "$INSTALLDIR" = "/etc/xdg/aacs" ]; then
+ sudo mkdir -pv "$INSTALLDIR"
+else
+ mkdir -pv "$INSTALLDIR"
+fi
+# USERDIR
+mkdir -pv "$USERDIR"
+
+## CLEAN
+if [ "$CLEAN" = "YES" ]; then
+ rm -fv "$TMPDIR/$SOURCEFILE"
+ rm -fv "$TMPDIR/$KEYDBFILE"
+fi
+
+## DOWNLOAD
+if [ ! -f "$TMPDIR/$SOURCEFILE" ]; then
+ wget -i "$SOURCEURL/$SOURCEFILE" -O "/tmp/$SOURCEFILE"
+fi
+
+## UNZIP
+unzip "$TMPDIR/$SOURCEFILE" -d "$TMPDIR"
+
+## INSTALL
+# SYSTEM
+if [ "$INSTALLDIR" = "/etc/xdg/aacs" ]; then
+ sudo install -v "$TMPDIR/$KEYDBFILE" "$INSTALLDIR/KEYDB.cfg"
+else
+ install -v "$TMPDIR/$KEYDBFILE" "$INSTALLDIR/KEYDB.cfg"
+fi
+# USER
+rm -v "$USERDIR/KEYDB.cfg"
+ln -s "$INSTALLDIR/KEYDB.cfg" "$USERDIR/KEYDB.cfg"
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

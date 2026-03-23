@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-opus
-### Version: v20241228.2300
+### Version: v0.20250916.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -35,12 +35,18 @@ if [ -z "$TMPDIR" ]; then
 fi
 echo "*** TMPDIR selected is $TMPDIR."
 
+## OPUSDATAFILE
+if [ -z "$OPUSDATAFILE" ]; then
+ OPUSDATAFILE="opus_data-4ec556dd87e63c17c4a805c40685ef3fe1fad7c8b26b123f2ede553b50158cb1.tar.gz"
+fi
+echo "*** OPUSDATAFILE selected is $OPUSDATAFILE."
+
 ## VARS
 RESDIR="$MIXTOOLSDIR/resources"
 DEVDIR="$MIXTOOLSDIR/upstream"
-GITURL=https://gitlab.xiph.org
-GITREPO=xiph
-GITTREE=opus
+GITURL="https://github.com"
+GITREPO="xiph"
+GITTREE="opus"
 PKGDIR="$GITTREE-$GITBRANCH"
 MULTILIBDIR="`gcc -dumpmachine`"
 
@@ -56,22 +62,27 @@ mkdir -p "$DEVDIR"
 mkdir -p "$TMPDIR/$PKGDIR"
 cd "$DEVDIR"
 
+## OPUSDATAFILE COPY TO DEVDIR
+if [ -f "$DEVDIR/$PKGDIR/$OPUSDATAFILE" -a ! -f "$DEVDIR/$OPUSDATAFILE" ]; then
+ cp "$DEVDIR/$PKGDIR/$OPUSDATAFILE" "$DEVDIR/"
+fi
+
 ## GIT
-[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+[ -d "$PKGDIR" ] || git clone --depth=1000 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
 cd "$PKGDIR"
 git clean -dfx
 git reset --hard
 git pull
 git submodule update --init
 
+## OPUSDATAFILE COPY TO PKGDIR
+if [ -f "$DEVDIR/$OPUSDATAFILE" -a ! -f "$DEVDIR/$PKGDIR/$OPUSDATAFILE" ]; then
+ cp "$DEVDIR/$OPUSDATAFILE" "$DEVDIR/$PKGDIR/"
+fi
+
 ## PACKAGE_VERSION
 PACKAGEVERSION="`git describe --always | sed -e 's|v||' -e 's|-|.|g' -e 's|draft.ietf.codec.oggopus.||'`"
 echo "PACKAGE_VERSION=$PACKAGEVERSION" > package_version
-
-## OPUSDATA
-if [ -f "$DEVDIR/opus_data-160753e983198f29f1aae67c54caa0e30bd90f1ce916a52f15bdad2df8e35e58.tar.gz" ]; then
- cp "$DEVDIR/opus_data-160753e983198f29f1aae67c54caa0e30bd90f1ce916a52f15bdad2df8e35e58.tar.gz" .
-fi
 
 ## CONFIGURE
 ./autogen.sh
@@ -85,6 +96,11 @@ make -j `nproc`
 ## INSTALL
 sudo make install
 sudo ldconfig
+
+## OPUSDATAFILE COPY TO DEVDIR
+if [ -f "$DEVDIR/$PKGDIR/$OPUSDATAFILE" -a ! -f "$DEVDIR/$OPUSDATAFILE" ]; then
+ cp "$DEVDIR/$PKGDIR/$OPUSDATAFILE" "$DEVDIR/"
+fi
 
 ## EXIT
 exit

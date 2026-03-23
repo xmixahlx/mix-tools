@@ -1,0 +1,25 @@
+--- havsfunc.py.orig	2025-10-02 20:04:09.222651913 -0700
++++ havsfunc.py	2025-10-02 20:04:54.952271082 -0700
+@@ -1186,11 +1186,11 @@
+         searchparam=SearchParam,
+         pelsearch=PelSearch,
+         truemotion=TrueMotion,
+-        lambda_=Lambda,
++        _lambda=Lambda,
+         lsad=LSAD,
+         pnew=PNew,
+         plevel=PLevel,
+-        global_=GlobalMotion,
++        _global=GlobalMotion,
+         dct=DCT,
+         chroma=ChromaMotion,
+     )
+@@ -1581,7 +1581,7 @@
+             search=Search,
+             searchparam=SearchParam,
+             truemotion=TrueMotion,
+-            lambda_=rLambda,
++            _lambda=rLambda,
+             pnew=PNew,
+             dct=DCT,
+             chroma=ChromaMotion,

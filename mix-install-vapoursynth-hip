@@ -1,0 +1,114 @@
+#!/bin/sh
+
+### Package: mix-install-vapoursynth-hip
+### Version: v0.20250928.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: vapoursynth ffms2 zimg
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+# Upstream is "main".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## GPUVER
+# Options are AMD and NVIDIA.
+if [ -z "$GPUVENDOR" ]; then
+ GPUVENDOR="AMD"
+fi
+echo "*** GPUVENDOR selected is $GPUVENDOR."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="line-fr"
+GITTREE="vship"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## INSTALLDEPS
+# Debian Dependencies
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git \
+ hipcc libzimg-dev libffms2-dev
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --depth=1 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## TMPDIR
+rm -Rf "$TMPDIR/$PKGDIR"
+mkdir -p "$TMPDIR"
+cp -R "$DEVDIR/$PKGDIR" "$TMPDIR/"
+cd "$TMPDIR/$PKGDIR"
+
+## PATCH
+#sed -i s+lib/vapoursynth+lib/$MULTILIBDIR/vapoursynth+ Makefile
+if [ "$PATCH" = "ON" ]; then
+ patch -p1 < "$RESDIR/vapoursynth-hip/vship_diff.patch"
+ patch -p1 < "$RESDIR/vapoursynth-hip/vship_diff2.patch"
+fi
+
+## BUILD
+# AMD
+if [ "$GPUVENDOR" = "AMD" ]; then
+ make build
+ make buildFFVSHIP
+fi
+# NVIDIA
+if [ "$GPUVENDOR" = "NVIDIA" ]; then
+ make buildcuda
+ make buildFFVSHIPcuda
+fi
+
+## INSTALL
+sudo make install PREFIX="$DESTDIR" LIBDIR="$DESTDIR/lib/$MULTILIBDIR"
+sudo ldconfig
+
+## LINK
+if [ -d "$DESTDIR/lib/$MULTILIBDIR/vapoursynth" ]; then
+ sudo ln -v -f -s "$DESTDIR/lib/vship.so" "$DESTDIR/lib/$MULTILIBDIR/vapoursynth/vship.so"
+fi
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

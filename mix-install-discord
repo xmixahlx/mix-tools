@@ -1,0 +1,45 @@
+#!/bin/sh
+
+### Package: nix-install-discord
+### Version: v0.20250928.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## BRANCH
+# Options are stable, ptb, canary
+if [ -z "$BRANCH" ]; then
+ BRANCH="canary"
+fi
+
+## PREP
+set -e
+
+## DOWNLOAD
+sudo rm -Rf /tmp/discord-*.deb
+# STABLE
+if [ "$BRANCH" = "stable" ]; then
+ wget "https://discord.com/api/download?platform=linux&format=deb" -O "/tmp/discord-stable.deb"
+fi
+# PTB
+if [ "$BRANCH" = "ptb" ]; then
+ wget "https://discord.com/api/download/ptb?platform=linux&format=deb" -O "/tmp/discord-ptb.deb"
+fi
+# CANARY
+if [ "$BRANCH" = "canary" ]; then
+ wget "https://discord.com/api/download/canary?platform=linux&format=deb" -O "/tmp/discord-canary.deb"
+fi
+
+## INSTALL
+sudo dpkg -i "/tmp/discord-$BRANCH.deb"
+
+## FIX (POSSIBLE) MISSING SUPPORT
+sudo apt-get -f install
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

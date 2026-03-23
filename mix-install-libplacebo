@@ -1,12 +1,13 @@
 #!/bin/sh
 
 ### Package: mix-install-libplacebo
-### Version: v20241230.2300
+### Version: v0.20260102.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
 ### VARIABLES
+
 # MIXTOOLS
 if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
@@ -29,32 +30,25 @@ if [ -z "$DESTDIR" ]; then
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
-## TMPDIR
-if [ -z "$TMPDIR" ]; then
- TMPDIR="/tmp/mix-tools"
-fi
-echo "*** TMPDIR selected is $TMPDIR."
-
 ## VARS
 RESDIR="$MIXTOOLSDIR/resources"
 DEVDIR="$MIXTOOLSDIR/upstream"
-GITURL=https://code.videolan.org
-GITREPO=videolan
-GITTREE=libplacebo
+GITURL="https://code.videolan.org"
+GITREPO="videolan"
+GITTREE="libplacebo"
 PKGDIR="$GITTREE-$GITBRANCH"
 MULTILIBDIR="`gcc -dumpmachine`"
 
 ### INSTALLDEPS
 # Debian
 if [ "$INSTALLDEPS" = "debian" ]; then
- sudo apt-get -y build-dep libplacebo
+ sudo apt-get -y build-dep libplacebo-dev
  sudo apt-get -y install build-essential coreutils libc-bin git meson ninja-build
 fi
 
 ## PREP
 set -e
 mkdir -p "$DEVDIR"
-mkdir -p "$TMPDIR/$PKGDIR"
 cd "$DEVDIR"
 
 ## GIT
@@ -66,15 +60,16 @@ git pull
 git submodule update --init
 
 ## CONFIGURE
-meson setup ""$TMPDIR/$PKGDIR"/tmpbuild" --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype="release"
+meson setup tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype="release"
 
 ## BUILD
-ninja -C ""$TMPDIR/$PKGDIR"/tmpbuild"
+ninja -C tmpbuild
 
 ## INSTALL
-sudo ninja -C ""$TMPDIR/$PKGDIR"/tmpbuild" install
+sudo ninja -C tmpbuild install
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

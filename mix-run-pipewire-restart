@@ -1,0 +1,19 @@
+#! /bin/sh
+
+### mix-run-systemctl-pipewire-restart
+
+## SYSTEMCTL
+systemctl --user stop pulseaudio
+systemctl --user disable pulseaudio
+systemctl --user mask pulseaudio
+systemctl --user daemon-reload
+systemctl --user enable pipewire pipewire-pulse
+systemctl --user stop pipewire.service pipewire.socket pipewire-pulse.service pipewire-pulse.socket
+systemctl --user start pipewire.service pipewire.socket pipewire-pulse.service pipewire-pulse.socket
+systemctl --user restart pipewire.service pipewire.socket pipewire-pulse.service pipewire-pulse.socket
+systemctl --user daemon-reload
+
+## EXIT
+echo "*** Done."
+
+## ENJOY

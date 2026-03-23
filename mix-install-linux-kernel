@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-linux-kernel
-### Version: v0.20250629.2300
+### Version: v0.20260321.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -23,47 +23,67 @@ echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
 ## STABLEVER
 if [ -z "$STABLEVER" ]; then
- STABLEVER="6.15"
+ STABLEVER="6.19"
 fi
 echo "*** STABLEVER selected is $STABLEVER."
 
 ## MAINVER
 if [ -z "$MAINVER" ]; then
- MAINVER="6.16"
+ MAINVER="7.0"
 fi
 echo "*** MAINVER selected is $MAINVER."
 
 ## POINTVER
 if [ -z "$POINTVER" ]; then
- POINTVER="none"
+ POINTVER="OFF"
 fi
 echo "*** POINTVER selected is $POINTVER."
 
 ## RCVER
 if [ -z "$RCVER" ]; then
- RCVER="none"
+ RCVER="OFF"
 fi
 echo "*** RCVER selected is $RCVER."
 
 ## BRANCH
-if [ "$RCVER" != "none" ]; then
+# Check RCVER
+# Note: We don't check POINTVER because this can be none/0.
+if [ "$RCVER" != "OFF" ]; then
  BRANCH="mainline"
 else
  BRANCH="stable"
 fi
+# Default BRANCH
 if [ -z "$BRANCH" ]; then
  BRANCH="stable"
 fi
 echo "*** BRANCH selected is $BRANCH."
 
 ## SELECTEDVER
+# Check mainline
 if [ "$BRANCH" = "mainline" ]; then
  SELECTEDVER="$MAINVER"
 fi
+# Check stable
 if [ "$BRANCH" = "stable" ]; then
  SELECTEDVER="$STABLEVER"
 fi
 echo "*** SELECTEDVER selected is $SELECTEDVER."
+
+## SELECTEDFULLVER
+# Check mainline
+if [ "$BRANCH" = "mainline" ]; then
+ SELECTEDFULLVER="$MAINVER-rc$RCVER"
+fi
+# Check stable
+if [ "$BRANCH" = "stable" ]; then
+ if [ "$POINTVER" != "OFF" ]; then
+  SELECTEDFULLVER="$STABLEVER.$POINTVER"
+ else
+  SELECTEDFULLVER="$STABLEVER"
+ fi
+fi
+echo "*** SELECTEDFULLVER selected is $SELECTEDFULLVER."
 
 ## KERNELCONFIG
 if [ -z "$KERNELCONFIG" ]; then
@@ -73,33 +93,27 @@ echo "*** KERNELCONFIG selected is $KERNELCONFIG."
 
 ## KERNELPATCH
 if [ -z "$KERNELPATCH" ]; then
- KERNELPATCH="none"
+ KERNELPATCH="OFF"
 fi
 echo "*** KERNELPATCH selected is $KERNELPATCH."
 
 ## KERNELSCRIPTS
 if [ -z "$KERNELSCRIPTS" ]; then
- KERNELSCRIPTS="yes"
+ KERNELSCRIPTS="ON"
 fi
 echo "*** KERNELSCRIPTS selected is $KERNELSCRIPTS."
 
 ## KERNELSCRIPTSDEBUG
 if [ -z "$KERNELSCRIPTSDEBUG" ]; then
- KERNELSCRIPTSDEBUG="no"
+ KERNELSCRIPTSDEBUG="OFF"
 fi
 echo "*** KERNELSCRIPTSDEBUG selected is $KERNELSCRIPTSDEBUG."
 
 ## KERNELSCRIPTSRT
 if [ -z "$KERNELSCRIPTSRT" ]; then
- KERNELSCRIPTSRT="no"
+ KERNELSCRIPTSRT="OFF"
 fi
 echo "*** KERNELSCRIPTSRT selected is $KERNELSCRIPTSRT."
-
-## CACHYOSPATCH
-if [ -z "$CACHYOSPATCH" ]; then
- CACHYOSPATCH="yes"
-fi
-echo "*** CACHYOSPATCH selected is $CACHYOSPATCH."
 
 ## BUILDVER
 if [ -z "$BUILDVER" ]; then
@@ -114,11 +128,11 @@ if [ -z "$BUILDVERBOSE" ]; then
 fi
 echo "*** BUILDVERBOSE selected is $BUILDVERBOSE."
 
-## MTUNE
-if [ -z "$MTUNE" ]; then
- MTUNE="znver4"
+## THREADS
+if [ -z "$THREADS" ]; then
+ THREADS="`nproc`"
 fi
-echo "*** MTUNE selected is $MTUNE."
+echo "*** THREADS selected is $THREADS."
 
 ## OPTIMIZE
 if [ -z "$OPTIMIZE" ]; then
@@ -126,11 +140,29 @@ if [ -z "$OPTIMIZE" ]; then
 fi
 echo "*** OPTIMIZE selected is $OPTIMIZE."
 
+## MARCH
+if [ -z "$MARCH" ]; then
+ MARCH="native"
+fi
+echo "*** MARCH selected is $MARCH."
+
+## MTUNE
+if [ -z "$MTUNE" ]; then
+ MTUNE="native"
+fi
+echo "*** MTUNE selected is $MTUNE."
+
 ## BUILDFLAGS
 if [ -z "$BUILDCFLAGS" ]; then
- BUILDFLAGS="-O$OPTIMIZE -march=$MTUNE -mtune=$MTUNE -Wno-error"
+ BUILDFLAGS="-O$OPTIMIZE -march=$MARCH -mtune=$MTUNE -pipe -Wno-error -Wno-incompatible-pointer-types"
 fi
 echo "*** BUILDFLAGS selected is $BUILDFLAGS."
+
+## RUSTBUILDFLAGS
+if [ -z "$RUSTBUILDCFLAGS" ]; then
+ RUSTBUILDFLAGS="-C opt-level=$OPTIMIZE -C target-cpu=$MARCH"
+fi
+echo "*** RUSTBUILDFLAGS selected is $RUSTBUILDFLAGS."
 
 ## LINUXDIR
 if [ -z "$LINUXDIR" ]; then
@@ -144,6 +176,24 @@ if [ -z "$TMPDIR" ]; then
 fi
 echo "*** TMPDIR selected is $TMPDIR."
 
+## NICE
+if [ -z "$NICE" ]; then
+ NICE="19"
+fi
+echo "*** NICE selected is $NICE."
+
+## CACHYOS
+if [ -z "$CACHYOS" ]; then
+ CACHYOS="ON"
+fi
+echo "*** CACHYOS selected is $CACHYOS."
+
+## CACHYOSVER
+if [ -z "$CACHYOSVER" ]; then
+ CACHYOSVER="1"
+fi
+echo "*** CACHYOSVER selected is $CACHYOSVER."
+
 ## VARS
 CONFIGSDIR="$LINUXDIR/CONFIGS"
 PACKAGESDIR="$LINUXDIR/PACKAGES"
@@ -154,6 +204,10 @@ UPSTREAMDIR="$LINUXDIR/UPSTREAM"
 if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y install dwarves bc flex ccache build-essential gcc g++
 fi
+
+## SCRIPTS
+mix-run-apt-upgrade
+mix-install-rustup
 
 ## CLEAN
 rm -Rf "$TMPDIR/linux-upstream"
@@ -170,103 +224,91 @@ mkdir -p "$TMPDIR"
 ## DOWNLOAD
 cd "$SOURCESDIR"
 
-# Download Stable
-echo "*** Downloading base STABLEVER $STABLEVER source."
-[ -f "linux-$STABLEVER.tar.gz" ] || wget "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$STABLEVER.tar.gz"
+## OFFICIAL
+if [ "$CACHYOS" = "OFF" ]; then
+ # Download Stable
+ echo "*** Downloading base STABLEVER $STABLEVER source."
+ [ -f "linux-$STABLEVER.tar.gz" ] || wget "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$STABLEVER.tar.gz"
 
-# Download Stable Pointversion
-if [ "$BRANCH" = "stable" ]; then
- echo "*** Downloading $BRANCH branch source."
- if [ "$POINTVER" != "none" ]; then
-  echo "*** Downloading POINTVER $POINTVER source."
-  [ -f "patch-$STABLEVER.$POINTVER.xz" ] || wget "https://cdn.kernel.org/pub/linux/kernel/v6.x/patch-$STABLEVER.$POINTVER.xz"
- fi
-fi
-
-# Download Mainline Release Candidate
-if [ "$BRANCH" = "mainline" ]; then
- echo "*** Processing $BRANCH branch downloads."
- if [ "$RCVER" != "none" ]; then
-  echo "*** Processing $BRANCH branch $MAINVER-rc$RCVER."
-  if [ ! -f "linux-$MAINVER-rc$RCVER-$STABLEVER.patch.gz" ]; then
-   rm -f "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
-   wget "https://git.kernel.org/torvalds/p/v$MAINVER-rc$RCVER/v$STABLEVER" -O "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
-   gzip "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
-   rm -f "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
+ # Download Stable Pointversion
+ if [ "$BRANCH" = "stable" ]; then
+  echo "*** Downloading $BRANCH branch source."
+  if [ "$POINTVER" != "OFF" ]; then
+   echo "*** Downloading POINTVER $POINTVER source."
+   [ -f "patch-$STABLEVER.$POINTVER.xz" ] || wget "https://cdn.kernel.org/pub/linux/kernel/v6.x/patch-$STABLEVER.$POINTVER.xz"
   fi
  fi
+
+ # Download Mainline Release Candidate
+ if [ "$BRANCH" = "mainline" ]; then
+  echo "*** Processing $BRANCH branch downloads."
+  if [ "$RCVER" != "OFF" ]; then
+   echo "*** Processing $BRANCH branch $MAINVER-rc$RCVER."
+   if [ ! -f "linux-$MAINVER-rc$RCVER-$STABLEVER.patch.gz" ]; then
+    rm -f "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
+    wget "https://git.kernel.org/torvalds/p/v$MAINVER-rc$RCVER/v$STABLEVER" -O "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
+    gzip "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
+    rm -f "linux-$MAINVER-rc$RCVER-$STABLEVER.patch"
+   fi
+  fi
+ fi
+
+ ## UNPACK
+ cd "$TMPDIR"
+ tar xf "$SOURCESDIR/linux-$STABLEVER.tar.gz"
+
+ ## RENAME DIRECTORY
+ mv "linux-$STABLEVER" linux-upstream
+
+ ## CHANGE DIRECTORY
+ cd linux-upstream
+
+ ## PATCH
+ # Patch stable
+ if [ "$BRANCH" = "stable" ]; then
+  echo "*** Processing stable patch."
+  if [ "$POINTVER" != "OFF" ]; then
+   # POINTVER PATCH
+   echo "*** Applying linux-$STABLEVER.$POINTVER patch"
+   xzcat "$SOURCESDIR/patch-$STABLEVER.$POINTVER.xz" | patch --silent -p1
+  else
+   echo "*** Not applying stable patch."
+  fi
+ fi
+ # Patch mainline
+ if [ "$BRANCH" = "mainline" ]; then
+  echo "*** Processing mainline patch."
+  if [ "$RCVER" != "OFF" ]; then
+   echo "*** Applying linux-$MAINVER-rc$RCVER-$STABLEVER patch"
+   gzip -dc "$SOURCESDIR/linux-$MAINVER-rc$RCVER-$STABLEVER.patch.gz" | patch --silent -p1
+  else
+   echo "*** Not applying mainline patch."
+  fi
+ fi
+
+ # KERNELPATCH
+ if [ "$KERNELPATCH" != "OFF" ]; then
+  patch --silent -p1 < "$KERNELPATCH"
+ fi
 fi
 
-# Prepare CACHYOSPATCH
-if [ "$CACHYOSPATCH" = "yes" ]; then
+## CACHYOS
+if [ "$CACHYOS" = "ON" ]; then
  # Create Git
  cd "$UPSTREAMDIR"
- if [ ! -d "cachyos-kernel-patches" ]; then
-  git clone https://github.com/cachyos/kernel-patches.git cachyos-kernel-patches
+ if [ ! -d "cachyos-$SELECTEDVER-rc$RCVER-$CACHYOSVER" ]; then
+  git clone --recursive --depth=1 --branch=cachyos-$SELECTEDVER-rc$RCVER-$CACHYOSVER https://github.com/cachyos/linux.git cachyos-$SELECTEDVER-rc$RCVER-$CACHYOSVER
  fi
- # Update Git
- cd cachyos-kernel-patches
- git clean -dfx
- git reset --hard
- git pull
- # Delete Old Patch
- rm -f "$SOURCESDIR/$SELECTEDVER-cachyos-base-all-bore.patch.gz"
- # Create Patch
- cat "$SELECTEDVER/all/0001-cachyos-base-all.patch" "$SELECTEDVER/sched/0001-bore-cachy.patch" >\
- "$SOURCESDIR/$SELECTEDVER-cachyos-base-all-bore.patch"
- cd "$SOURCESDIR"
- gzip "$SELECTEDVER-cachyos-base-all-bore.patch"
- rm -f "$SELECTEDVER-cachyos-base-all-bore.patch"
-fi
 
-## UNPACK
-cd "$TMPDIR"
-tar xf "$SOURCESDIR/linux-$STABLEVER.tar.gz"
-
-## RENAME DIRECTORY
-mv "linux-$STABLEVER" linux-upstream
-
-## CHANGE DIRECTORY
-cd linux-upstream
-
-## PATCH
-# Patch stable
-if [ "$BRANCH" = "stable" ]; then
- echo "*** Processing stable patches."
- if [ "$POINTVER" != "none" ]; then
-  # POINTVER PATCH
-  echo "*** Applying linux-$STABLEVER.$POINTVER patch"
-  xzcat "$SOURCESDIR/patch-$STABLEVER.$POINTVER.xz" | patch -p1
- else
-  echo "*** Not applying POINTVER patch."
- fi
-fi
-# Patch mainline
-if [ "$BRANCH" = "mainline" ]; then
- echo "*** Processing mainline patches."
- if [ "$RCVER" != "none" ]; then
-  echo "*** Applying linux-$MAINVER-rc$RCVER-$STABLEVER patch"
-  gzip -dc "$SOURCESDIR/linux-$MAINVER-rc$RCVER-$STABLEVER.patch.gz" | patch -p1
- else
-  echo "*** Not applying RCVER patch."
- fi
-fi
-# Patch CachyOS
-if [ "$CACHYOSPATCH" = "yes" ]; then
- echo "*** Applying CachyOS all base + bore patch."
- gzip -dc "$SOURCESDIR/$SELECTEDVER-cachyos-base-all-bore.patch.gz" | patch -p1
-fi
-
-# KERNELPATCH
-if [ "$KERNELPATCH" != "none" ]; then
- patch -p1 < "$KERNELPATCH"
+ cp -r "$UPSTREAMDIR/cachyos-$SELECTEDVER-rc$RCVER-$CACHYOSVER" "/tmp/mix-tools/linux-upstream"
+ cd "/tmp/mix-tools/linux-upstream"
 fi
 
 ## CONFIG
 cp "$KERNELCONFIG" .config
 
 ## KERNELSCRIPTS
-if [ "$KERNELSCRIPTS" = "yes" ]; then
+if [ "$KERNELSCRIPTS" = "ON" ]; then
  ./scripts/config --set-str LOCALVERSION -$MTUNE-$BUILDVER
  ./scripts/config --set-val PREEMPT_NONE n
  ./scripts/config --set-val PREEMPT_VOLUNTARY n
@@ -328,7 +370,7 @@ if [ "$KERNELSCRIPTS" = "yes" ]; then
 fi
 
 ## KERNELSCRIPTSDEBUG
-if [ "$KERNELSCRIPTSDEBUG" = "no" ]; then
+if [ "$KERNELSCRIPTSDEBUG" = "OFF" ]; then
  ./scripts/config --set-val DEBUG_MISC n
  ./scripts/config --undefine GDB_SCRIPTS
  ./scripts/config --undefine DEBUG_INFO
@@ -340,34 +382,39 @@ if [ "$KERNELSCRIPTSDEBUG" = "no" ]; then
  ./scripts/config --set-val  DEBUG_INFO_DWARF5     n
 fi
 
-## CACHYOSPATCH
-if [ "$CACHYOSPATCH" = "yes" ]; then
- ./scripts/config --set-str LOCALVERSION -cachyos-$MTUNE-$BUILDVER
+## CACHYOS
+if [ "$CACHYOS" = "ON" ]; then
+ ./scripts/config --set-str LOCALVERSION -cachyos-native-$BUILDVER
  ./scripts/config --set-val CACHY y
  ./scripts/config --set-val USER_NS_UNPRIVILEGED y
  ./scripts/config --set-val SCHED_BORE y
  ./scripts/config --set-val CC_OPTIMIZE_FOR_PERFORMANCE_03 y
- ./scripts/config --set-val MZEN4 y
+ ./scripts/config --set-val X86_NATIVE_CPU y
  ./scripts/config --set-val HZ_500 n
- ./scripts/config --set-val HZ_600 y
+ ./scripts/config --set-val HZ_600 n
  ./scripts/config --set-val HZ_750 n
- ./scripts/config --set-val HZ_1000 n
+ ./scripts/config --set-val HZ_1000 y
  ./scripts/config --set-val MIN_BASE_SLICE_NS 2000000
- ./scripts/config --set-val MQ_IOSCHED_ADIOS y
- ./scripts/config --set-val MQ_IOSCHED_DEFAULT_ADIOS y
+ ./scripts/config --set-val MQ_IOSCHED_ADIOS m
  ./scripts/config --set-val VHBA m
  ./scripts/config --set-val V4L2_LOOPBACK m
  ./scripts/config --set-val ANON_MIN_RATIO 1
  ./scripts/config --set-val CLEAN_LOW_RATIO 15
  ./scripts/config --set-val CLEAN_MIN_RATIO 4
  ./scripts/config --set-val ZRAM_DEF_COMP_ZSTD y
+ ./scripts/config --set-val AMD_PRIVATE_COLOR y
+ ./scripts/config --set-val AMD_HFI y
+ ./scripts/config --set-val ACPI_CALL m
 fi
 
 ## KERNELSCRIPTSRT
 # Note: Starting with 6.12-rc1 RT is now in mainline
-if [ "$KERNELSCRIPTSRT" = "yes" ]; then
- if [ "$CACHYOSPATCH" = "yes" ]; then
-  ./scripts/config --set-str LOCALVERSION -rt-cachyos-$MTUNE-$BUILDVER
+if [ "$KERNELSCRIPTSRT" = "ON" ]; then
+ if [ "$CACHYOS" = "ON" ]; then
+  ./scripts/config --set-str LOCALVERSION -rt-cachyos-native-$BUILDVER
+  ./scripts/config --set-val HZ_500 n
+  ./scripts/config --set-val HZ_600 n
+  ./scripts/config --set-val HZ_750 n
  else
   ./scripts/config --set-str LOCALVERSION -rt-$MTUNE-$BUILDVER
  fi
@@ -384,26 +431,31 @@ if [ "$KERNELSCRIPTSRT" = "yes" ]; then
 fi
 
 ## OLDCONFIG
-make oldconfig -j `nproc`
+make -s oldconfig -j `nproc`
 
 ## MENUCONFIG
-make menuconfig -j `nproc`
+make -s menuconfig -j `nproc`
 
 ## BUILD
-if [ "$CACHYOSPATCH" = "yes" ]; then
- make \
+if [ "$CACHYOS" = "ON" ]; then
+ command time -v \
+ nice -n "$NICE" \
+ make -s \
  KBUILD_VERBOSE="$BUILDVERBOSE" \
- -j `nproc` bindeb-pkg
+ -j "$THREADS" bindeb-pkg
 else
- CC="$CC" CXX="$CXX" CPP="$CPP" \
- make \
- KCFLAGS+="$BUILDFLAGS" KCPPFLAGS+="$BUILDFLAGS" \
- KBUILD_RUSTFLAGS+="-Copt-level=$OPTIMIZE" \
+ command time -v \
+ nice -n "$NICE" \
+ make -s \
+ KCFLAGS+="$BUILDFLAGS" \
+ KCPPFLAGS+="$BUILDFLAGS" \
+ KRUSTFLAGS+="$RUSTBUILDFLAGS" \
  KBUILD_VERBOSE="$BUILDVERBOSE" \
- -j `nproc` bindeb-pkg
+ -j "$THREADS" bindeb-pkg
 fi
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

@@ -1,0 +1,20 @@
+--- havsfunc.py.orig	2025-10-02 19:51:00.971129601 -0700
++++ havsfunc.py	2025-10-02 19:51:43.508532922 -0700
+@@ -4,7 +4,7 @@
+ from functools import partial
+ from typing import Any, Mapping, Optional, Sequence, Union
+ 
+-from vsdenoise import BM3D, nl_means, prefilter_to_full_range
++from vsdenoise import bm3d, nl_means, prefilter_to_full_range
+ from vsexprtools import complexpr_available, norm_expr
+ from vsrgtools import BlurMatrix, gauss_blur, repair
+ from vstools import (
+@@ -1285,7 +1285,7 @@
+                 ]
+             )
+         if Denoiser == 'bm3d':
+-            dnWindow = BM3D.denoise(noiseWindow, Sigma, NoiseTR, planes=CNplanes)
++            dnWindow = bm3d.denoise(noiseWindow, Sigma, NoiseTR, planes=CNplanes)
+         elif Denoiser == 'dfttest':
+             dnWindow = noiseWindow.dfttest.DFTTest(sigma=Sigma * 4, tbsize=noiseTD, planes=CNplanes)
+         elif Denoiser in ['knlm', 'knlmeanscl']:

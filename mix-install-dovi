@@ -1,103 +1,90 @@
 #!/bin/sh
 
 ### Package: mix-install-dovi
-### Version: v20240728.2300
+### Version: v0.20250916.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLS
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
 fi
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
 
-# GITBRANCH
-if [ -z $GITBRANCH ]; then
+## GITBRANCH
+# Upstream branch is "main".
+if [ -z "$GITBRANCH" ]; then
  GITBRANCH=main
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
-# DESTDIR
-if [ -z $DESTDIR ]; then
- DESTDIR=/usr/local
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
 ## VARS
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=/tmp/mix-tools
-GITURL=https://github.com
-GITREPO=quietvoid
-GITTREE=dovi_tool
-PKGDIR=$GITTREE\_$GITBRANCH
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="quietvoid"
+GITTREE="dovi_tool"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## INSTALLDEPS
 # Debian Dependencies
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y install build-essential coreutils libc-bin git \
  fontconfig
 fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
 
 ## CLEAN
-if [ -d $DEVDIR/$PKGDIR ]; then
- sudo rm -Rf $DEVDIR/$PKGDIR/target
- sudo rm -Rf $DEVDIR/$PKGDIR/dolby_vision/target
+if [ -d "$DEVDIR/$PKGDIR" ]; then
+ sudo rm -Rf "$DEVDIR/$PKGDIR/target"
+ sudo rm -Rf "$DEVDIR/$PKGDIR/dolby_vision/target"
+ sudo rm -Rf "$DEVDIR/$PKGDIR/dolby_vision/tmpbuild"
 fi
 
 ## GIT
-[ -d $PKGDIR ] || git clone --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
 git reset --hard
 git pull
 git submodule update --init
 
-## UPDATE RUST
-#sudo \
-#env PATH=/root/.cargo/bin:$PATH \
-#rustup update
+## LIB BUILD
+cd "$DEVDIR/$PKGDIR/dolby_vision"
+cargo cinstall --release --destdir=tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR"
 
-## LIB
-cd $DEVDIR/$PKGDIR/dolby_vision
-
-# CLEAN
-#sudo \
-#env PATH=/root/.cargo/bin:$PATH \
-cargo clean
-
-# BUILD & INSTALL
-#sudo \
-#env PATH=/root/.cargo/bin:$PATH \
-cargo cinstall --release --ignore-rust-version
-#cargo build --release --ignore-rust-version
+## LIB INSTALL
+sudo cp -a tmpbuild/* /
 sudo ldconfig
 
-## TOOL
-cd $DEVDIR/$PKGDIR
+## TOOL BUILD
+cd "$DEVDIR/$PKGDIR"
+cargo build --release
 
-# CLEAN
-#sudo \
-#env PATH=/root/.cargo/bin:$PATH \
-cargo clean
-
-# BUILD & INSTALL
-#sudo \
-#env PATH=/root/.cargo/bin:$PATH \
-cargo install --path . --root $DESTDIR
+# TOOL INSTALL
+sudo install -D -m 755 "target/release/dovi_tool" "$DESTDIR/bin/dovi_tool"
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

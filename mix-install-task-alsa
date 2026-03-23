@@ -6,11 +6,12 @@
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
- export MIXTOOLSDIR=~/Development/XMIXAHLX/mix-tools
- export PATH=$MIXTOOLSDIR:$PATH
+### OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
@@ -27,6 +28,7 @@ mix-install-alsa-python
 mix-install-alsa-oss
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

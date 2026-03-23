@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-vapoursynth-nnedi3
-### Version: v20241230.2300
+### Version: v0.20250928.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -39,8 +39,8 @@ echo "*** TMPDIR selected is $TMPDIR."
 RESDIR="$MIXTOOLSDIR/resources"
 DEVDIR="$MIXTOOLSDIR/upstream"
 GITURL="https://github.com"
-GITREPO=dubhater
-GITTREE=vapoursynth-nnedi3
+GITREPO="dubhater"
+GITTREE="vapoursynth-nnedi3"
 PKGDIR="$GITTREE-$GITBRANCH"
 MULTILIBDIR="`gcc -dumpmachine`"
 
@@ -75,6 +75,7 @@ make -j `nproc`
 sudo make install
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

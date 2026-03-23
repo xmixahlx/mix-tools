@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-xserver-xorg
-### Version: v20210501.2300
+### Version: v0.20260219.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -19,7 +19,17 @@ fi
 
 # GITBRANCH
 if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+ GITBRANCH=main
+fi
+
+# DESTDIR
+if [ -z $DESTDIR ]; then
+ DESTDIR="/usr/local"
+fi
+
+# BUILDTYPE
+if [ -z $BUILDTYPE ]; then
+ BUILDTYPE="release"
 fi
 
 ## VARS
@@ -29,6 +39,7 @@ GITURL=https://gitlab.freedesktop.org
 GITREPO=xorg
 GITTREE=xserver
 PKGDIR=$GITTREE\_$GITBRANCH
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## DEPS
 # Provide INSTALLDEPS=debian to install dependencies.
@@ -55,7 +66,7 @@ git submodule update --init --recursive --depth=1
 rm -Rf tmpbuild
 
 ## CONFIGURE
-meson tmpbuild -Dprefix=/usr/local -Dbuildtype=release --libdir=/usr/local/lib/x86_64-linux-gnu/
+meson setup tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype="$BUILDTYPE"
 
 ## BUILD
 ninja -C tmpbuild

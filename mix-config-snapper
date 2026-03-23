@@ -39,12 +39,12 @@ if [ "$SNAPSHOTROOT" = "enabled" ]; then
   sudo snapper -c root create-config /
 
   ## CONFIGURE
-  sudo snapper -c root set-config TIMELINE_LIMIT_HOURLY="24"
-  sudo snapper -c root set-config TIMELINE_LIMIT_DAILY="7"
-  sudo snapper -c root set-config TIMELINE_LIMIT_WEEKLY="4"
-  sudo snapper -c root set-config TIMELINE_LIMIT_MONTHLY="12"
+  sudo snapper -c root set-config TIMELINE_LIMIT_HOURLY="5"
+  sudo snapper -c root set-config TIMELINE_LIMIT_DAILY="5"
+  sudo snapper -c root set-config TIMELINE_LIMIT_WEEKLY="5"
+  sudo snapper -c root set-config TIMELINE_LIMIT_MONTHLY="0"
   sudo snapper -c root set-config TIMELINE_LIMIT_QUARTERLY="0"
-  sudo snapper -c root set-config TIMELINE_LIMIT_YEARLY="7"
+  sudo snapper -c root set-config TIMELINE_LIMIT_YEARLY="0"
  else
   echo "*** SNAPSHOTROOT configuration already exists. Skipping."
  fi
@@ -61,13 +61,12 @@ if [ "$SNAPSHOTHOME" = "enabled" ]; then
   sudo snapper -c home create-config /home
 
   ## CONFIGURE
-
-  sudo snapper -c home set-config TIMELINE_LIMIT_HOURLY="24"
-  sudo snapper -c home set-config TIMELINE_LIMIT_DAILY="7"
-  sudo snapper -c home set-config TIMELINE_LIMIT_WEEKLY="4"
-  sudo snapper -c home set-config TIMELINE_LIMIT_MONTHLY="12"
+  sudo snapper -c home set-config TIMELINE_LIMIT_HOURLY="5"
+  sudo snapper -c home set-config TIMELINE_LIMIT_DAILY="5"
+  sudo snapper -c home set-config TIMELINE_LIMIT_WEEKLY="5"
+  sudo snapper -c home set-config TIMELINE_LIMIT_MONTHLY="0"
   sudo snapper -c home set-config TIMELINE_LIMIT_QUARTERLY="0"
-  sudo snapper -c home set-config TIMELINE_LIMIT_YEARLY="7"
+  sudo snapper -c home set-config TIMELINE_LIMIT_YEARLY="0"
  else
   echo "*** SNAPSHOTHOME configuration already exists. Skipping."
  fi
@@ -82,9 +81,8 @@ sudo systemctl enable --now snapper-cleanup.timer
 ## RESTART SERVICE
 echo "*** Restarting snapperd service."
 sudo systemctl restart --now snapperd.service
-sudo systemctl start --now snapper-timeline.timer
-sudo systemctl start --now snapper-cleanup.timer
-
+sudo systemctl restart --now snapper-timeline.timer
+sudo systemctl restart --now snapper-cleanup.timer
 
 ## EXIT
 echo "*** Done."

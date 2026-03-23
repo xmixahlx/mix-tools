@@ -1,47 +1,48 @@
 #!/bin/sh
 
 ### Package: mix-alternatives-gcc
-### Version: v20241208.2300
+### Version: v0.20251130.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLS
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# DEBVER
-if [ -z $DEBVER ]; then
- DEBVER=experimental
+## DEBVER
+if [ -z "$DEBVER" ]; then
+ DEBVER="experimental"
 fi
 echo "*** DEBVER selected is $DEBVER."
 
-# PKGVER
-if [ -z $PKGVER ]; then
- PKGVER=15
+## PKGVER
+if [ -z "$PKGVER" ]; then
+ PKGVER=16
 fi
 echo "*** PKGVER selected is $PKGVER."
 
 ## INSTALLDEPS
 # Debian Dependencies
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y install build-essential coreutils libc-bin
  sudo apt-get -y install -t $DEBVER gcc g++ gcc-$PKGVER g++-$PKGVER \
  gcc-$PKGVER-multilib g++-$PKGVER-multilib
 fi
 
 ## INSTALL
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
  # GCC
  sudo rm /usr/bin/gcc
  sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9
@@ -51,6 +52,7 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
  sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 14
  sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-15 15
+ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-16 16
  sudo update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-upstream/bin/gcc 998
  sudo update-alternatives --install /usr/bin/gcc gcc /usr/local/bin/gcc 999
 
@@ -63,6 +65,7 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 13
  sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 14
  sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 15
+ sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-16 16
  sudo update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-upstream/bin/g++ 998
  sudo update-alternatives --install /usr/bin/g++ g++ /usr/local/bin/g++ 999
 
@@ -72,6 +75,7 @@ if [ $INSTALLDEPS = debian ]; then
 fi
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

@@ -29,6 +29,12 @@ if [ -z $DESTDIR ]; then
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
+## RUSTVER
+if [ -z $RUSTVER ]; then
+ RUSTVER="stable"
+fi
+echo "*** RUSTVER selected is $RUSTVER."
+
 ## VARS
 RESDIR=$MIXTOOLSDIR/resources
 DEVDIR=$MIXTOOLSDIR/upstream
@@ -65,6 +71,9 @@ git submodule update --init
 if [ "$DESTDIR" != /usr ]; then
  sed -i -e s+PREFIX=/usr+PREFIX="$DESTDIR"+g Makefile
 fi
+
+## SET RUST VERSION
+rustup override set "$RUSTVER"
 
 ## IGNORE RUST VERSION
 rm -f rust-toolchain*

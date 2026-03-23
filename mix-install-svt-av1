@@ -1,80 +1,89 @@
 #!/bin/sh
 
 ### Package: mix-install-svt-av1
-### Version: v20240728.2300
+### Version: v0.20251217.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLS
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
 
-# GITBRANCH
-if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+## GITBRANCH
+# Upstream branch is "master".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
-# DESTDIR
-if [ -z $DESTDIR ]; then
- DESTDIR=/usr/local
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local/svt-av1-official-$GITBRANCH"
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
+## SVTAV1LTO
+# options are off or on
+if [ -z "$SVTAV1LTO" ]; then
+ SVTAV1LTO="ON"
+fi
+echo "*** SVTAV1LTO selected is $SVTAV1LTO."
+
 ## VARS
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=$MIXTOOLSDIR/upstream
-GITURL=https://gitlab.com
-GITREPO=aomediacodec
-GITTREE=svt-av1
-PKGDIR=$GITTREE\_$GITBRANCH
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://gitlab.com"
+GITREPO="aomediacodec"
+GITTREE="svt-av1"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## INSTALLDEPS
 # Debian Dependencies
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y build-dep svt-av1
  sudo apt-get -y install build-essential coreutils libc-bin git cmake
 fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## CLEAN
+rm -Rf "$PKGDIR/tmpbuild"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --depth=1000 --recursive "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
 git reset --hard
 git pull
-git submodule update --init
-
-## CLEAN
-rm -Rf tmpbuild
+git submodule update --init --depth=1000 --recursive
 
 ## CONFIGURE
-mkdir tmpbuild
-cd tmpbuild
-cmake .. -DCMAKE_INSTALL_PREFIX=$DESTDIR -DCMAKE_BUILD_TYPE=Release \
--DCMAKE_INSTALL_LIBDIR=$DESTDIR/lib/x86_64-linux-gnu \
--DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+cmake -DCMAKE_INSTALL_PREFIX="$DESTDIR" -DCMAKE_BUILD_TYPE=Release \
+-DCMAKE_INSTALL_LIBDIR="$DESTDIR/lib/$MULTILIBDIR" \
+-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+-DSVT_AV1_LTO="$SVTAV1LTO" -DENABLE_AVX512="$AVX512" -B tmpbuild -G Ninja
 
 ## BUILD
-make -j `nproc`
+ninja -C tmpbuild
 
 ## INSTALL
-sudo make install
+sudo ninja -C tmpbuild install
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
-
-## ENJOY

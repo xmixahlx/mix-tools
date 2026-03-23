@@ -1,7 +1,7 @@
 #! /bin/bash
 
 ### Package: mix-install-task-system
-### Version: v0.20250623.2300
+### Version: v0.20251120.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -10,65 +10,143 @@
 
 ## MIXTOOLSDIR
 if [ -z "$MIXTOOLSDIR" ]; then
- export MIXTOOLSDIR="~/Development/XMIXAHLX/mix-tools"
- export PATH="$MIXTOOLSDIR":"$PATH"
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 
-## INSTALL
-# build
-mix-install-mold
-mix-install-meson
-mix-install-ninja-build
-mix-install-nasm
-# system
-mix-install-zlib-ng
-mix-install-libsigcpp
-mix-install-libjxl
-# wayland
-mix-install-wayland
-mix-install-wayland-protocols
-mix-install-wayland-utils
-# xorg
-mix-install-libpciaccess
-mix-install-libdrm
-mix-install-xcbproto
-mix-install-xcb-errors
-mix-install-xorgproto
-# acceleration
-mix-install-libva
-mix-install-libva-utils
-mix-install-onevpl
-mix-install-v4l-utils
-# opencl
-mix-install-opencl-headers
-mix-install-opencl-icd-loader
-mix-install-opencl-clhpp
-# spirv
-# glslang broken with lto
-CFLAGS="$GNUCFLAGSNOLTO" CXXFLAGS="$GNUCFLAGSNOLTO" CPPFLAGS="$GNUCFLAGSNOLTO" \
-mix-install-glslang
-mix-install-spirv-headers
-mix-install-spirv-tools
-mix-install-spirv-reflect
-mix-install-spirv-llvm
-mix-install-spirv-cross
-# vulkan
-mix-install-vulkan-headers
-# vulkan-loader broken with ccache
-CC="gcc" CXX="g++" CPP="g++ -E" \
-mix-install-vulkan-loader
-mix-install-vulkan-utility-libraries
-mix-install-vulkan-validationlayers
-mix-install-vulkan-extensionlayer
-mix-install-vulkan-tools
-# mesa
+## ALTERNATIVES
+if [ -z "$ALTERNATIVES" ]; then
+ ALTERNATIVES="ON"
+fi
+echo "*** ALTERNATIVES selected is $ALTERNATIVES."
+
+## BUILD
+if [ -z "$BUILD" ]; then
+ BUILD="ON"
+fi
+echo "*** BUILD selected is $BUILD."
+
+## SYSTEM
+if [ -z "$SYSTEM" ]; then
+ SYSTEM="ON"
+fi
+echo "*** SYSTEM selected is $SYSTEM."
+
+## WAYLAND
+if [ -z "$WAYLAND" ]; then
+ WAYLAND="ON"
+fi
+echo "*** WAYLAND selected is $WAYLAND."
+
+## XORG
+if [ -z "$XORG" ]; then
+ XORG="ON"
+fi
+echo "*** XORG selected is $XORG."
+
+## HWACCEL
+if [ -z "$HWACCEL" ]; then
+ HWACCEL="ON"
+fi
+echo "*** HWACCEL selected is $HWACCEL."
+
+## SPIRV
+if [ -z "$SPIRV" ]; then
+ SPIRV="ON"
+fi
+echo "*** SPIRV selected is $SPIRV."
+
+## VULKAN
+if [ -z "$VULKAN" ]; then
+ VULKAN="ON"
+fi
+echo "*** VULKAN selected is $VULKAN."
+
+### UPDATE
+
+mix-run-apt-upgrade
+
+### INSTALL
+
+## ALTERNATIVES
+if [ "$ALTERNATIVES" = "ON" ]; then
+ mix-alternatives-gcc
+ mix-alternatives-clang
+ mix-alternatives-llvm
+fi
+
+## BUILD
+if [ "$BUILD" = "ON" ]; then
+ mix-install-rustup
+ mix-install-mold
+ mix-install-meson
+ mix-install-ninja-build
+ mix-install-nasm
+ mix-install-zig
+fi
+
+## SYSTEM
+if [ "$SYSTEM" = "ON" ]; then
+ mix-install-zlib-ng
+ mix-install-libsigcpp
+ mix-install-libjxl
+ mix-install-libcamera
+ mix-install-libpciaccess
+ mix-install-libdrm
+fi
+
+## WAYLAND
+if [ "$WAYLAND" = "ON" ]; then
+ mix-install-wayland
+ mix-install-wayland-protocols
+ mix-install-wayland-utils
+ mix-install-wayback
+fi
+
+## XORG
+if [ "$XORG" = "ON" ]; then
+ mix-install-xcbproto
+ mix-install-xcb-errors
+ mix-install-xorgproto
+fi
+
+## HWACCEL
+if [ "$HWACCEL" = "ON" ]; then
+ mix-install-libva
+ mix-install-libva-utils
+ mix-install-onevpl
+ mix-install-v4l-utils
+ mix-install-opencl-headers
+ mix-install-opencl-icd-loader
+ mix-install-opencl-clhpp
+fi
+
+## SPIRV
+if [ "$SPIRV" = "ON" ]; then
+ mix-install-glslang
+ mix-install-spirv-headers
+ mix-install-spirv-tools
+ mix-install-spirv-reflect
+ mix-install-spirv-llvm
+ mix-install-spirv-cross
+fi
+
+## VULKAN
+if [ "$VULKAN" = "ON" ]; then
+ mix-install-vulkan-headers
+ mix-install-vulkan-loader
+ mix-install-vulkan-utility-libraries
+ mix-install-vulkan-validationlayers
+ mix-install-vulkan-extensionlayer
+ mix-install-vulkan-tools
+fi
+
+## MISC
 mix-install-mesa
-# xdg
 mix-install-xdg-desktop-portal
 mix-install-xdg-desktop-portal-gtk
 mix-install-qpwgraph
 mix-install-pwvucontrol
-# misc
 mix-install-mission-center
 mix-install-resources
 

@@ -1,0 +1,83 @@
+#!/bin/sh
+
+### Package: mix-install-lsdvd
+### Version: v0.20251230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+## GITBRANCH
+# Upstream branch is "master". Releases are tagged "#.#".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+
+git clone https://git.code.sf.net/p/lsdvd/git lsdvd-git
+GITURL="https://git.code.sf.net/p"
+GITREPO="lsdvd"
+GITTREE="git"
+PKGDIR="$GITREPO-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## INSTALLDEPS
+# Debian Dependencies
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y build-dep lsdvd
+ sudo apt-get -y install build-essential coreutils libc-bin git \
+ autoreconf make
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --recursive --depth=100
+
+## CONFIGURE
+autoreconf -vifs
+./configure --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --enable-year2038
+
+## BUILD
+make -j `nproc`
+
+## INSTALL
+sudo make install
+sudo ldconfig
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

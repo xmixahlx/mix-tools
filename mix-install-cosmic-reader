@@ -29,6 +29,12 @@ if [ -z $DESTDIR ]; then
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
+## RUSTVER
+if [ -z $RUSTVER ]; then
+ RUSTVER="stable"
+fi
+echo "*** RUSTVER selected is $RUSTVER."
+
 ## VARS
 RESDIR=$MIXTOOLSDIR/resources
 DEVDIR=$MIXTOOLSDIR/upstream
@@ -45,7 +51,8 @@ if [ $INSTALLDEPS = debian ]; then
  just libglvnd-dev libwayland-dev libseat-dev libxkbcommon-dev libinput-dev \
  udev dbus libdbus-1-dev libpam0g-dev libpixman-1-dev libssl-dev libflatpak-dev \
  libsystemd-dev libpulse-dev libexpat1-dev libfontconfig-dev \
- libfreetype-dev mold libgbm-dev libclang-dev libpipewire-0.3-dev
+ libfreetype-dev mold libgbm-dev libclang-dev libpipewire-0.3-dev \
+ libgumbo-dev python3-gumbo libjbig2dec0-dev
 fi
 
 ## PREP
@@ -60,6 +67,9 @@ git clean -dfx
 git reset --hard
 git pull
 git submodule update --init
+
+## SET RUST VERSION
+rustup override set "$RUSTVER"
 
 ## BUILD
 cargo build --release

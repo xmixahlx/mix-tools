@@ -1,39 +1,31 @@
 #!/bin/sh
 
 ### Package: mix-install-jamesdsp
-### Version: v20240825.2300
+### Version: v0.20251120.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
+### OVERRIDES
+
+## MIXTOOLSDIR
 if [ -z $MIXTOOLSDIR ]; then
  MIXTOOLSDIR="`pwd`"
  PATH=$MIXTOOLSDIR:$PATH
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
+## INSTALLDEPS
 if [ -z $INSTALLDEPS ]; then
  INSTALLDEPS=debian
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
+## GITBRANCH
 if [ -z $GITBRANCH ]; then
  GITBRANCH=master
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
-
-# CFLAGS
-if [ -z $CFLAGS ]; then
- CFLAGS="-O3 -march=native"
- CPPFLAGS="$CFLAGS"
- export CFLAGS=$CFLAGS
- export CPPFLAGS=$CPPFLAGS
-fi
-echo "*** CFLAGS selected is $CFLAGS."
 
 # GITPR
 if [ -z $GITPR ]; then

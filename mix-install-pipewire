@@ -1,56 +1,69 @@
 #!/bin/sh
 
 ### Package: mix-install-pipewire
-### Version: v20241101.2300
+### Version: v0.20251209.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: libcamera
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
-# Upstream branch is "master" and release branches are "X.Y".
-if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+## GITBRANCH
+# Upstream branch is "master". Release branches are "X.Y".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
 # DESTDIR
 # Note: default location is /usr!
-if [ -z $DESTDIR ]; then
- DESTDIR=/usr
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr"
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+## SESSIONMANAGERS
+if [ -z "$SESSIONMANAGERS" ]; then
+ SESSIONMANAGERS="wireplumber"
+fi
+echo "*** SESSIONMANAGERS selected is $SESSIONMANAGERS."
+
 ## VARS
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=$MIXTOOLSDIR/upstream
-GITURL=https://gitlab.freedesktop.org
-GITREPO=pipewire
-GITTREE=pipewire
-PKGDIR=$GITTREE\_$GITBRANCH
-MULTILIBDIR=`gcc -dumpmachine`
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://gitlab.freedesktop.org"
+GITREPO="pipewire"
+GITTREE="pipewire"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## INSTALLDEPS
 # Provide INSTALLDEPS=debian to install dependencies.
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y build-dep pipewire libfdk-aac-dev+
  sudo apt-get -y install build-essential coreutils libc-bin git meson \
  libsdl2-dev libjack-jackd2-dev \
  libldacbt-enc-dev libldacbt-abr-dev libopenaptx-dev libfdk-aac-dev \
- libavcodec-dev libsystemd-dev libsndfile-dev libusb-dev libavahi-client-dev \
+ libavcodec-dev libsndfile-dev libusb-dev libavahi-client-dev \
  libcap-dev libgstreamer1.0-dev \
  docutils-common gir1.2-gst-plugins-base-1.0 libgstreamer-gl1.0-0 \
  libgstreamer-plugins-base1.0-dev liborc-0.4-dev liborc-0.4-dev-bin \
@@ -62,44 +75,45 @@ fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
 
 ## CLEAN
-sudo rm -Rf $PKGDIR/tmpbuild
+sudo rm -Rf "$PKGDIR/tmpbuild"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --recursive --depth=1000 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
-git reset --hard HEAD
+git reset --hard
 git pull
-git submodule update --init --recursive --depth=1
+git submodule update --init --recursive --depth=1000
 
 ## CONFIGURE
-meson tmpbuild --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR --buildtype=release \
+meson setup tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype="$BUILDTYPE" \
 -Ddocs=disabled -Dman=enabled -Dgstreamer=enabled -Dgstreamer-device-provider=enabled \
--Dsystemd=enabled -Dsystemd-system-service=enabled -Dsystemd-user-service=enabled \
+-Dsystemd-system-service=enabled -Dsystemd-user-service=enabled \
 -Dpipewire-alsa=enabled -Dpipewire-jack=enabled -Dpipewire-v4l2=enabled -Djack-devel=false \
 -Dspa-plugins=enabled -Dalsa=enabled -Daudiomixer=enabled \
 -Daudioconvert=enabled -Dbluez5=enabled -Dbluez5-backend-hsp-native=enabled \
 -Dbluez5-backend-hfp-native=enabled -Dbluez5-backend-native-mm=enabled -Dbluez5-backend-ofono=enabled \
 -Dbluez5-backend-hsphfpd=enabled -Dbluez5-codec-aptx=enabled -Dbluez5-codec-ldac=enabled \
--Dbluez5-codec-aac=enabled -Dbluez5-codec-lc3plus=disabled -Dbluez5-codec-opus=enabled \
--Dbluez5-codec-lc3=disabled -Dcontrol=enabled -Daudiotestsrc=enabled -Dffmpeg=enabled -Djack=enabled \
+-Dbluez5-codec-aac=enabled -Dbluez5-codec-lc3plus=enabled -Dbluez5-codec-opus=enabled \
+-Dbluez5-codec-lc3=enabled -Dcontrol=enabled -Daudiotestsrc=enabled -Dffmpeg=enabled -Djack=enabled \
 -Dsupport=enabled -Devl=disabled -Dv4l2=enabled -Ddbus=enabled -Dlibcamera=enabled \
 -Dvideoconvert=enabled -Dvideotestsrc=enabled -Dvolume=enabled -Dvulkan=enabled -Dpw-cat=enabled \
 -Dpw-cat-ffmpeg=enabled -Dudev=enabled -Dsdl2=enabled -Dsndfile=enabled -Dlibmysofa=enabled \
 -Dlibpulse=enabled -Droc=enabled -Davahi=enabled -Decho-cancel-webrtc=enabled -Dlibusb=enabled \
 -Draop=enabled -Dlv2=enabled -Dx11=enabled -Dx11-xfixes=enabled -Dlibcanberra=enabled \
 -Dlegacy-rtkit=true -Davb=enabled -Dflatpak=enabled -Dreadline=enabled -Dgsettings=enabled \
--Dcompress-offload=enabled -Dpam-defaults-install=false -Dopus=enabled -Dlibffado=enabled \
+-Dcompress-offload=enabled -Dpam-defaults-install=true -Dopus=enabled -Dlibffado=enabled \
 -Dlogind=enabled -Dlogind-provider=libsystemd -Dgsettings-pulse-schema=enabled -Dsnap=enabled \
--Dsession-managers=""
+-Dsession-managers="$SESSIONMANAGERS"
 
 # docs disabled
 # evl disabled
 # lc3plus and lc3 disabled
+# pam-defaults-install true
 
 ## BUILD
 ninja -C tmpbuild
@@ -107,14 +121,6 @@ ninja -C tmpbuild
 ## INSTALL
 sudo ninja -C tmpbuild install
 sudo ldconfig
-
-## SYSTEM CONFIG
-#[ ! -f /usr/local/share/pipewire/media-session.d/with-jack ] && \
-# sudo touch /usr/local/share/pipewire/media-session.d/with-jack
-#[ ! -f /usr/local/share/pipewire/media-session.d/with-alsa ] && \
-# sudo touch /usr/local/share/pipewire/media-session.d/with-alsa
-#[ ! -L /etc/alsa/conf.d/99-pipewire-default.conf ] && \
-# sudo ln -s /usr/local/share/alsa/alsa.conf.d/99-pipewire-default.conf /etc/alsa/conf.d/99-pipewire-default.conf
 
 ## USER CONFIG
 systemctl --user stop pulseaudio
@@ -128,6 +134,7 @@ systemctl --user restart pipewire.service pipewire.socket pipewire-pulse.service
 systemctl --user daemon-reload
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

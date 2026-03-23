@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-svt-av1-psyex
-### Version: v0.20250629.2300
+### Version: v0.20251217.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: dovi hdr10plus
@@ -28,7 +28,7 @@ echo "*** GITBRANCH selected is $GITBRANCH."
 
 ## DESTDIR
 if [ -z "$DESTDIR" ]; then
- DESTDIR="/usr/local"
+ DESTDIR="/usr/local/svt-av1-psyex-$GITBRANCH"
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
@@ -39,17 +39,24 @@ if [ -z "$AVX512" ]; then
 fi
 echo "*** AVX512 selected is $AVX512."
 
+## SVTAV1LTO
+# options are off or on
+if [ -z "$SVTAV1LTO" ]; then
+ SVTAV1LTO="ON"
+fi
+echo "*** SVTAV1LTO selected is $SVTAV1LTO."
+
 # DOVI
 # options are off or on
 if [ -z "$DOVI" ]; then
- DOVI="0"
+ DOVI="1"
 fi
 echo "*** DOVI selected is $DOVI."
 
 # HDR10PLUS
 # options are off or on
 if [ -z "$HDR10PLUS" ]; then
- HDR10PLUS="0"
+ HDR10PLUS="1"
 fi
 echo "*** HDR10PLUS selected is $HDR10PLUS."
 
@@ -90,7 +97,7 @@ cmake -DCMAKE_INSTALL_PREFIX="$DESTDIR" -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_INSTALL_LIBDIR="$DESTDIR/lib/$MULTILIBDIR" \
 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
 -DLIBDOVI_FOUND="$DOVI" -DLIBHDR10PLUS_RS_FOUND="$HDR10PLUS" \
--DSVT_AV1_LTO=ON -DENABLE_AVX512="$AVX512" -B tmpbuild -G Ninja
+-DSVT_AV1_LTO="$SVTAV1LTO" -DENABLE_AVX512="$AVX512" -B tmpbuild -G Ninja
 
 ## BUILD
 ninja -C tmpbuild
@@ -100,6 +107,7 @@ sudo ninja -C tmpbuild install
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

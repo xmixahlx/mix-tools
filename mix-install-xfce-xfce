@@ -84,7 +84,7 @@ xfce4-settings xfce4-session xfdesktop xfwm4 xfce4-appfinder tumbler thunar-volm
 
  ## CONFIGURE
  # libxfce4windowing uses meson
- if [ $GITTREE = libxfce4windowing ]; then
+ if [ "$GITTREE" = "libxfce4windowing" -o "$GITTREE" = "xfconf" ]; then
   meson setup tmpbuild --prefix=/usr/local --libdir=/usr/local/lib/x86_64-linux-gnu --buildtype=release
  else
   if [ -f autogen.sh ]; then
@@ -100,7 +100,7 @@ xfce4-settings xfce4-session xfdesktop xfwm4 xfce4-appfinder tumbler thunar-volm
 
  ## BUILD
  # libxfce4windowing uses meson
- if [ $GITTREE = libxfce4windowing ]; then
+ if [ "$GITTREE" = "libxfce4windowing" -o "$GITTREE" = "xfconf" ]; then
   ninja -C tmpbuild
  else
   make -j `nproc`
@@ -108,7 +108,7 @@ xfce4-settings xfce4-session xfdesktop xfwm4 xfce4-appfinder tumbler thunar-volm
 
  ## INSTALL
  # libxfce4windowing uses meson
- if [ $GITTREE = libxfce4windowing ]; then
+ if [ "$GITTREE" = "libxfce4windowing" -o "$GITTREE" = "xfconf" ]; then
   sudo ninja -C tmpbuild install
  else
   sudo make install

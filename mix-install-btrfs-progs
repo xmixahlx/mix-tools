@@ -1,0 +1,99 @@
+#!/bin/sh
+
+### Package: mix-install-btrfs-progs
+### Version: v0.20250629.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+## GITBRANCH
+# Upstream branch is "devel". Releases are tagged "v#.#".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="devel"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="kdave"
+GITTREE="btrfs-progs"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## INSTALLDEPS
+# Debian Dependencies
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y build-dep btrfs-progs
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --recursive --depth=1 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --recursive --depth=1
+
+## TMPDIR
+rm -Rf "$TMPDIR/$PKGDIR"
+mkdir -p "$TMPDIR"
+cp -R "$DEVDIR/$PKGDIR" "$TMPDIR/"
+cd "$TMPDIR/$PKGDIR"
+
+## CONFIGURE
+./autogen.sh
+./configure --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" \
+--enable-experimental --enable-year2038
+
+## BUILD
+make -j `nproc`
+
+## INSTALL
+sudo make install
+sudo ldconfig
+
+## APT-MARK HOLD
+if [ "$INSTALLDEPS" = "debian" ] && [ "$DESTDIR" = "/usr" ]; then
+ sudo apt-mark hold btrfs-progs libbtrfs0t64 libbtrfs-dev libbtrfsutil1t64 libbtrfsutil-dev
+fi
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

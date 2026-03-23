@@ -1,49 +1,63 @@
 #!/bin/sh
 
 ### Package: mix-install-makemkv
-### Version: v20230926.2300
+### Version: v0.20260127.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
-if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr"
 fi
-echo "*** GITBRANCH selected is $GITBRANCH."
+echo "*** DESTDIR selected is $DESTDIR."
 
-# PKGVER
-if [ -z $PKGVER ]; then
- PKGVER=1.16.5
+## PKGVER
+if [ -z "$PKGVER" ]; then
+ PKGVER="1.18.3"
 fi
 echo "*** PKGVER selected is $PKGVER."
 
+## COMPILEROVERRIDE
+# DEFAULT
+if [ -z "$COMPILEROVERRIDE" ]; then
+ COMPILEROVERRIDE="ON"
+fi
+# CHECK
+if [ "$COMPILEROVERRIDE" = "ON" ]; then
+ LD="$LDGOLD"
+ LDFLAGS="$LDFLAGSGOLD"
+fi
+echo "*** COMPILEROVERRIDE selected is $COMPILEROVERRIDE."
+
 ## VARS
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=$MIXTOOLSDIR/upstream
-MKVOSS=makemkv-oss-$PKGVER
-MKVBIN=makemkv-bin-$PKGVER
-MKVOSSFILE=$MKVOSS.tar.gz
-MKVBINFILE=$MKVBIN.tar.gz
-MKVURL=https://www.makemkv.com/download
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+MKVOSS="makemkv-oss-$PKGVER"
+MKVBIN="makemkv-bin-$PKGVER"
+MKVOSSFILE="$MKVOSS.tar.gz"
+MKVBINFILE="$MKVBIN.tar.gz"
+MKVURL="https://www.makemkv.com/download"
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## DEPS
 # Provide INSTALLDEPS=debian to install dependencies.
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y install build-essential coreutils libc-bin git make \
  libavutil-dev libavcodec-dev qtbase5-dev libexpat1-dev libssl-dev \
  zlib1g-dev libc6-dev
@@ -51,39 +65,49 @@ fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
 
 ## CLEAN
-sudo rm -Rf $DEVDIR/$MKVOSS
-sudo rm -Rf $DEVDIR/$MKVBIN
+sudo rm -Rf "$DEVDIR/$MKVOSS"
+sudo rm -Rf "$DEVDIR/$MKVBIN"
 
 ## DOWNLOAD
-[ ! -f $DEVDIR/$MKVOSSFILE ] && wget $MKVURL/$MKVOSSFILE
-[ ! -f $DEVDIR/$MKVBINFILE ] && wget $MKVURL/$MKVBINFILE
+# MKVOSSFILE
+if [ ! -f "$DEVDIR/$MKVOSSFILE" ]; then
+  wget "$MKVURL/$MKVOSSFILE"
+fi
+# MKVBINFILE
+if [ ! -f "$DEVDIR/$MKVBINFILE" ]; then
+ wget "$MKVURL/$MKVBINFILE"
+fi
 
 ## UNPACK
-tar xf $MKVOSSFILE
-tar xf $MKVBINFILE
+tar xf "$MKVOSSFILE"
+tar xf "$MKVBINFILE"
+
+### MKVOSS
 
 ## CONFIGURE
-cd $DEVDIR/$MKVOSS
-##sed -i "s/av_mallocz_array/av_calloc/g" libffabi/src/ffabi.c
-./configure --libdir=/usr/lib/x86_64-linux-gnu
+cd "$DEVDIR/$MKVOSS"
+./configure --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR"
 
 ## BUILD
 make -j `nproc`
 
 ## INSTALL
 sudo make install
+sudo ldconfig
 
-## MKVBIN INSTALL
-cd $DEVDIR/$MKVBIN
+### MKVBIN
+
+## INSTALL
+cd "$DEVDIR/$MKVBIN"
 sudo make install
-
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

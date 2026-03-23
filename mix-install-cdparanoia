@@ -32,10 +32,12 @@ if [ -z $DESTDIR ]; then
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
-CC="ccache gcc-13"
-CPP="ccache g++-13"
-CFLAGS="-O3 -march=znver4 -mtune=znver4 -fPIC -g"
-CPPFLAGS="$CFLAGS"
+CC="gcc-13"
+CPP="g++-13 -E"
+CXX="g++-13"
+CFLAGS+="-fPIC -g"
+CPPFLAGS+="-fPIC -g"
+CXXFLAGS+="-fPIC -g"
 
 
 ## VARS

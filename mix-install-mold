@@ -1,83 +1,128 @@
 #!/bin/sh
 
 ### Package: mix-install-mold
-### Version: v20240326.2300
+### Version: v0.20251120.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
 fi
-echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
-echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
-if [ -z $GITBRANCH ]; then
- GITBRANCH=main
+## GITBRANCH
+# Upstream branch is "main".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
-# CC
-# Broken with ccache
-CC="gcc-14"
-CXX="g++-14"
-echo "*** CC selected is $CC."
-echo "*** CXX selected is $CXX."
+## GITPR
+if [ -z "$GITPR" ]; then
+ GITPR="none"
+fi
+echo "*** GITPR selected is $GITPR."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+## COMPILEROVERRIDE
+# Broken with lto and ccache
+# Default
+if [ -z "$COMPILEROVERRIDE" ]; then
+ COMPILEROVERRIDE="ON"
+fi
+# Check
+if [ "$COMPILEROVERRIDE" = "ON" ]; then
+echo "*** TEST DISABLE."
+ CC="$CCDEFAULT"
+ CPP="CPPDEFAULT"
+ CXX="$CXXDEFAULT"
+ CFLAGS="$CFLAGSBASIC"
+ CPPFLAGS="$CPPFLAGSBASIC"
+ CXXFLAGS="$CXXFLAGSBASIC"
+ RUSTFLAGS="$RUSTFLAGSBASIC"
+ LD="$LDBASIC"
+ LDFLAGS="$LDFLAGSBASIC"
+else
+ COMPILEROVERRIDE="OFF"
+fi
+echo "*** COMPILEROVERRIDE selected is $COMPILEROVERRIDE."
 
 ## VARS
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=$MIXTOOLSDIR/upstream
-DESTDIR=/usr/local
-MULTILIBDIR=`gcc -dumpmachine`
-GITURL=https://github.com
-GITREPO=rui314
-GITTREE=mold
-PKGDIR=$GITTREE\_$GITBRANCH
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="rui314"
+GITTREE="mold"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
 
-## DEPS
-# Provide INSTALLDEPS=debian to install dependencies.
-if [ $INSTALLDEPS = debian ]; then
+### INSTALLDEPS
+# Debian
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y build-dep mold
  sudo apt-get -y install build-essential coreutils libc-bin git
 fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+mkdir -p "$TMPDIR/$PKGDIR"
+cd "$DEVDIR"
 
 ## CLEAN
-sudo rm -Rf $PKGDIR/tmpbuild
+rm -Rf "$PKGDIR/tmpbuild"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
 git reset --hard
 git pull
-git submodule update --init --recursive --depth=1
+git submodule update --init
+
+## GITPR
+if [ "$GITPR" != "none" ]; then
+ git pull origin pull/$GITPR/head --rebase
+fi
 
 ## CONFIGURE
-mkdir tmpbuild
-cd tmpbuild
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake -B tmpbuild -G Ninja -DCMAKE_INSTALL_PREFIX="$DESTDIR" \
+-DCMAKE_BUILD_TYPE="$BUILDTYPE" -DMOLD_USE_SYSTEM_MIMALLOC=ON -DMOLD_USE_SYSTEM_TBB=ON
 
 ## BUILD
-make -j `nproc`
+ninja -C tmpbuild
 
 ## INSTALL
-sudo make install
+sudo ninja -C tmpbuild install
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

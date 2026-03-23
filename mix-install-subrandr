@@ -1,0 +1,82 @@
+#!/bin/sh
+
+### Package: mix-install-subrandr
+### Version: v0.20251230.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+# Upstream branch is "main". Release tags are format v#.#.#.
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="afishhh"
+GITTREE="subrandr"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## INSTALLDEPS
+# Debian Dependencies
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## BUILD
+cargo build --release
+
+# TOOL INSTALL
+#sudo install -D -m 755 "target/release/dovi_tool" "$DESTDIR/bin/dovi_tool"
+#sudo ldconfig
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY
+
+## LIB BUILD
+cd "$DEVDIR/$PKGDIR/dolby_vision"
+cargo cinstall --release --destdir=tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR"
+
+## LIB INSTALL
+sudo cp -a tmpbuild/* /
+sudo ldconfig
+

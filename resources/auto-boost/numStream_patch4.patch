@@ -1,0 +1,103 @@
+diff --git a/Auto-Boost-Essential/Auto-Boost-Essential.py b/Auto-Boost-Essential/Auto-Boost-Essential.py
+index d93b9b4..6b3e3d3 100644
+--- a/Auto-Boost-Essential/Auto-Boost-Essential.py
++++ b/Auto-Boost-Essential/Auto-Boost-Essential.py
+@@ -44,6 +44,9 @@ from rich.console import Console
+ from statistics import quantiles
+ from math import ceil, log10
+ from pathlib import Path
++from subprocess import call
++import sys
++import json
+ import subprocess
+ import argparse
+ import platform
+@@ -809,74 +812,11 @@ def calculate_ssimu2() -> None:
+     """
+     Calculate SSIMULACRA2 metrics score.
+     """
+-    try:
+-        source_clip = core.ffms2.Source(source=src_file, cachefile=f"{cache_file}")
+-    except:
+-        console.print("[red]Error indexing source file. Is it corrupted?")
+-        raise SystemExit(1)
+-    try:
+-        encoded_clip = core.ffms2.Source(source=fast_output_file, cache=False)
+-    except:
+-        console.print("[red]Error indexing fast pass file. Did you run stage 1?")
+-        raise SystemExit(1)
+-
+-    if len(source_clip) != len(encoded_clip):
+-        console.print("[red]Source frame count and encode frame count are different. Did you successfully run stage 1?")
+-        raise SystemExit(1)
+-
+-    if verbose:
+-        console.print(f"Source: {len(source_clip)} frames\nEncode: {len(encoded_clip)} frames")
+-
+-    skip = 3
+-    if skip > 1:
+-        cut_source_clip = source_clip[::skip]
+-        cut_encoded_clip = encoded_clip[::skip]
+-    else:
+-        cut_source_clip = source_clip
+-        cut_encoded_clip = encoded_clip
+-
+-    if cpu:
+-        result = core.vszip.Metrics(cut_source_clip, cut_encoded_clip, mode=0)
+-    else:
+-        try:
+-            result = core.vship.SSIMULACRA2(cut_source_clip, cut_encoded_clip)
+-        except:
+-            console.print(f"[yellow]Vship not found or available, defaulting to vs-zip.")
+-            try:
+-                result = core.vszip.Metrics(cut_source_clip, cut_encoded_clip, mode=0)
+-            except:
+-                console.print(f"[red]vs-zip not found either. Check your installation.")
+-                raise SystemExit(1)
+-
+-    score_list = [None] * result.num_frames
+-
+-    def get_ssimu2props(n: int, f: vs.VideoFrame) -> None:
+-        score_list[n] = float(f.props.get('_SSIMULACRA2'))
+-
+-    with Progress(
+-            SpinnerColumn(),
+-            TextColumn("[progress.description]{task.description}"),
+-            BarColumn(),
+-            "[progress.percentage]{task.percentage:>3.0f}%",
+-            FPSColumn(),
+-            TimeElapsedColumn(),
+-            TimeRemainingColumn(),
+-            console=console
+-        ) as progress:
+-
+-        task = progress.add_task("[green]Calculating SSIMULACRA2 scores", total=cut_source_clip.num_frames*skip)
+-
+-        def progress_func(n: int, num_frames: int) -> None:
+-            progress.update(task, advance=skip)
+-
+-        clip_async_render(
+-            result,
+-            outfile=None,
+-            progress=progress_func,
+-            callback=get_ssimu2props
+-        )
+-
+-        progress.update(task, description="[cyan]Calculated SSIMULACRA2 scores ", completed=cut_source_clip.num_frames*skip)
++    skip=3
++    call(f"FFVship \"{src_file}\" \"{fast_output_file}\" -t 6 --every {skip} --json FFVSHIP_out.json", shell=True, stdout=sys.stdout)
++    with open("FFVSHIP_out.json", "r") as file:
++        raw = json.load(file)
++    score_list = [el[0] for el in raw]
+ 
+     if 'source_clip' in locals() and 'encoded_clip' in locals():
+         del source_clip
+@@ -929,7 +869,7 @@ def calculate_zones(ranges: list[float], hr: bool, nframe: int) -> None:
+ 
+     with open(ssimu2_log_file, "r") as file:
+         for line in file:
+-            match = re.search(r"([0-9]+): (-?[0-9]+\.[0-9]+)", line)
++            match = re.search(r"([0-9]+): (([+-]?[0-9]*\.?[0-9]*))", line)
+             if match:
+                 score = float(match.group(2))
+                 ssimu2_scores.append(score)

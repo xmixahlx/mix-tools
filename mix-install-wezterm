@@ -1,0 +1,137 @@
+#!/bin/sh
+
+### Package: mix-install-wezterm
+### Version: v0.20260322.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+## GITBRANCH
+# Upstream branch is "main".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## SYSCONFDIR
+if [ -z "$SYSCONFDIR" ]; then
+ SYSCONFDIR="/usr/local/etc"
+fi
+echo "*** SYSCONFDIR selected is $SYSCONFDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+## COMPILEROVERRIDE
+if [ -z "$COMPILEROVERRIDE" ]; then
+ COMPILEROVERRIDE="ON"
+fi
+if [ "$COMPILEROVERRIDE" = "ON" ]; then
+# CC="$CCDEFAULT"
+# CPP="$CPPDEFAULT"
+# CXX="$CXXDEFAULT"
+ CFLAGS="$CFLAGSNATIVE"
+ CXXFLAGS="$CXXFLAGNATIVE"
+ CPPFLAGS="$CPPFLAGSNATIVE"
+ RUSTFLAGS="$RUSTFLAGSNATIVE"
+ LD="$LDBASIC"
+ LDFLAGS="$LDFLAGSBASIC"
+else
+ COMPILEROVERRIDE="OFF"
+fi
+echo "*** COMPILEROVERRIDE selected is $COMPILEROVERRIDE."
+
+## GITPR
+if [ -z "$GITPR" ]; then
+ GITPR="none"
+fi
+echo "*** GITPR selected is $GITPR."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="wezterm"
+GITTREE="wezterm"
+PKGDIR="$GITTREE-$GITBRANCH"
+GITPRURL="$GITURL"
+GITPRPATCH="$GITPRURL/$GITREPO/$GITTREE/-/merge_requests/$GITPR.patch"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## INSTALLDEPS
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git meson \
+ blueprint-compiler
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## CLEAN
+sudo rm -Rf "$PKGDIR/tmpbuild"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --recursive --depth=100
+
+## GITPR
+if [ "$GITPR" != "none" ]; then
+ rm -f "$DEVDIR/$GITTREE-$GITPR.patch"
+ wget "$GITPRPATCH -O $DEVDIR/$GITTREE-$GITPR.patch"
+ patch -p1 < "$DEVDIR/$GITTREE-$GITPR.patch"
+fi
+
+## BUILD
+cargo build --release --all --ignore-rust-version
+# --all-targets --ignore-rust-version
+
+## INSTALL
+sudo install -Dm755 "target/release/wezterm" -t "$DESTDIR/bin/"
+sudo install -Dm755 "target/release/wezterm-gui" -t "$DESTDIR/bin/"
+sudo install -Dm755 "target/release/wezterm-mux-server" -t "$DESTDIR/bin/"
+sudo install -Dm755 "target/release/strip-ansi-escapes" -t "$DESTDIR/bin/"
+sudo install -Dm644 assets/icon/terminal.png "$DESTDIR/share/pixmaps/org.wezfurlong.wezterm.png"
+sudo install -Dm644 assets/wezterm.desktop "$DESTDIR/share/applications/org.wezfurlong.wezterm.desktop"
+sudo install -Dm644 assets/wezterm.appdata.xml "$DESTDIR/share/metainfo/org.wezfurlong.wezterm.appdata.xml"
+sudo install -Dm644 assets/wezterm-nautilus.py "$DESTDIR/share/nautilus-python/extensions/wezterm-nautilus.py"
+sudo install -Dm755 assets/open-wezterm-here -t "$DESTDIR/bin/"
+sudo install -Dm644 assets/shell-completion/bash "$DESTDIR/share/bash-completion/completions/wezterm"
+sudo install -Dm644 assets/shell-completion/zsh "$DESTDIR/share/zsh/site-functions/_wezterm"
+sudo install -Dm644 assets/shell-completion/fish "$DESTDIR/share/fish/completions/wezterm.fish"
+sudo install -Dm644 assets/shell-integration/wezterm.sh "$SYSCONFDIR/profile.d/wezterm.sh"
+sudo install -Dm644 LICENSE.md -t "/$DESTDIR/share/licenses/wezterm/"
+
+## EXIT
+echo "*** Done."
+exit
+
+# ENJOY

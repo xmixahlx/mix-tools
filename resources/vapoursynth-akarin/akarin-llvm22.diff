@@ -1,0 +1,11 @@
+--- meson.build.orig	2025-09-19 15:59:55.450825334 -0700
++++ meson.build	2025-09-19 16:00:11.711329541 -0700
+@@ -87,7 +87,7 @@
+ else
+   sources = sources_common + sources_expr2
+   incdir += include_directories('expr2/reactor')
+-  deps += dependency('llvm', version: ['>= 10.0', '< 22'], method: 'config-tool', static: static_llvm,
++  deps += dependency('llvm', version: ['>= 10.0', '< 23'], method: 'config-tool', static: static_llvm,
+     modules: [
+       'asmprinter', 'executionengine', 'target', 'orcjit', 'native',
+     ])

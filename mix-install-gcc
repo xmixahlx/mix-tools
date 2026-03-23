@@ -1,47 +1,41 @@
 #!/bin/sh
 
 ### Package: mix-install-gcc
-### Version: v20220122.2300
+### Version: v0.20250809.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
+### OVERRIDES
+
+## MIXTOOLSDIR
 if [ -z $MIXTOOLSDIR ]; then
  MIXTOOLSDIR="`pwd`"
  PATH=$MIXTOOLSDIR:$PATH
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
+## INSTALLDEPS
 if [ -z $INSTALLDEPS ]; then
  INSTALLDEPS=debian
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
+## GITBRANCH
 if [ -z $GITBRANCH ]; then
  GITBRANCH=master
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
-# DESTDIR
+## DESTDIR
 if [ -z $DESTDIR ]; then
  DESTDIR=/usr/local
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
-# CFLAGS
-#if [ -z $CFLAGSTEST ]; then
-# CFLAGS="-O3 -march=native -B/usr/local/libexec/mold -Wno-maybe-uninitialized"
-# CXXFLAGS="$CFLAGS"
-#fi
-#echo "*** CFLAGS selected is $CFLAGS."
-
 ## VARS
 RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=/tmp/mix-tools
+DEVDIR=$MIXTOOLSDIR/upstream
 GITURL=https://gcc.gnu.org/git
 GITREPO=gcc
 GITTREE=gcc
@@ -51,7 +45,9 @@ MULTILIBDIR=`gcc -dumpmachine`
 ## DEPS
 # Provide INSTALLDEPS=debian to install dependencies.
 if [ $INSTALLDEPS = debian ]; then
- sudo apt-get -y install build-essential coreutils libc-bin git make cmake
+ sudo apt-get -y build-dep gcc
+ sudo apt-get -y install build-essential coreutils libc-bin git make cmake \
+ libgmp-dev libmpfr-dev libmpc-dev
 fi
 
 ## PREP
@@ -72,15 +68,16 @@ git submodule update --init --recursive --depth=1
 
 ## CONFIGURE
 ./configure --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR \
---enable-shared --enable-threads=posix --enable-clocale=gnu --enable-languages="c,c++,fortran" \
+--enable-shared --enable-threads=posix --enable-clocale=gnu --enable-languages="c,c++" \
 --enable--__cxa_atexit --enable-checking=release --enable-lto --enable-multilib \
 --enable-plugin --disable-bootstrap \
---disable-libssp --disable-libstdcxx-pch --disable-werror
-# \
-#--enable-libada --enable-libssp --enable-lto --enable-shared --with-system-zlib
-#--enable-languages=all
+--disable-libssp --disable-libstdcxx-pch --disable-werror \
+--with-system-zlib --with-tune=native
 
-##--with-tune=native
+#--enable-shared --enable-threads=posix --enable-clocale=gnu --enable-languages="c,c++,fortran" \
+
+#--enable-libada --enable-libssp
+#--enable-languages=all
 
 ## BUILD
 make -j `nproc`

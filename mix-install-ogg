@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-ogg
-### Version: v20241228.2300
+### Version: v0.20250916.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -38,9 +38,9 @@ echo "*** TMPDIR selected is $TMPDIR."
 ## VARS
 RESDIR="$MIXTOOLSDIR/resources"
 DEVDIR="$MIXTOOLSDIR/upstream"
-GITURL=https://gitlab.xiph.org
-GITREPO=xiph
-GITTREE=ogg
+GITURL="https://github.com"
+GITREPO="xiph"
+GITTREE="ogg"
 PKGDIR="$GITTREE-$GITBRANCH"
 MULTILIBDIR="`gcc -dumpmachine`"
 

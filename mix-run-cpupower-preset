@@ -1,0 +1,276 @@
+#!/bin/sh
+
+### Package: mix-run-cpupower-preset
+### Version: v0.20260322.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## LOGDIR
+if [ -z "$LOGDIR" ]; then
+ LOGDIR="/home/$USER/.cache"
+fi
+
+## LOGFILE
+if [ -z "$LOGFILE" ]; then
+ LOGFILE="$LOGDIR/cpupower.log"
+fi
+
+## ENVIRONMENT
+set -e
+mkdir -p "$LOGDIR"
+
+## START LOG
+echo "*** START LOG" | tee -a "$LOGFILE"
+echo "*** LOGDIR = $LOGDIR" | tee -a "$LOGFILE"
+echo "*** LOGFILE = $LOGFILE" | tee -a "$LOGFILE"
+
+## DATE
+DATE=`date +%Y%m%d%H%M%S`
+echo "*** DATE = $DATE" | tee -a "$LOGFILE"
+
+## CPUPOWERVER
+echo "*** `cpupower -v|head -1`" | tee -a "$LOGFILE"
+
+## CPU
+# Options are amd and intel. Default is amd.
+if [ -z "$CPU" ]; then
+ CPU="amd"
+fi
+echo "*** CPU = $CPU" | tee -a "$LOGFILE"
+
+## GPU
+# Options are amd.
+# Default is amd.
+if [ -z "$GPU" ]; then
+ GPU="amd"
+fi
+echo "*** GPU = $GPU" | tee -a "$LOGFILE"
+
+## PRESET
+# Configured options are performance, balanced, and powersave
+# DEFAULT
+if [ -z "$PRESET" ]; then
+ PRESET="performance"
+fi
+# BALANCED PRESET
+if [ "$PRESET" = "balanced" ]; then
+ # CPUGOV
+ if [ -z "$CPUGOV" ]; then
+  CPUGOV="ondemand"
+ fi
+ # CPUMAX
+ if [ -z "$CPUMAX" ]; then
+  CPUMAX="3000"
+ fi
+ # POWERPROFILES
+ if [ -z "$POWERPROFILES" ]; then
+  POWERPROFILES="balanced"
+ fi
+ # POWERPROFILESPANEL
+ if [ -z "$POWERPROFILESPANEL" -a "$GPU" = "amd" ]; then
+  POWERPROFILESPANEL="disable"
+ fi
+ # POWERPROFILESDPM
+ if [ -z "$POWERPROFILESDPM" -a "$GPU" = "amd" ]; then
+  POWERPROFILESDPM="disable"
+ fi
+ # PERFBIAS
+ if [ -z "$PERFBIAS" -a "$CPU" = "intel" ]; then
+  PERFBIAS="7"
+ fi
+ # EPP
+ if [ -z "$EPP" ]; then
+  EPP="balanced_power"
+ fi
+ # TURBOBOOST
+ if [ -z "$TURBOBOOST" ]; then
+  TURBOBOOST="0"
+ fi
+ # BACKLIGHT
+ if [ -z "$BACKLIGHT" ]; then
+  BACKLIGHT="25"
+ fi
+fi
+# POWERSAVE PRESET
+if [ "$PRESET" = "powersave" ]; then
+ # CPUGOV
+ if [ -z "$CPUGOV" ]; then
+  CPUGOV="powersave"
+ fi
+ # CPUMAX
+ if [ -z "$CPUMAX" ]; then
+  CPUMAX="1000"
+ fi
+ # POWERPROFILES
+ if [ -z "$POWERPROFILES" ]; then
+  POWERPROFILES="power-saver"
+ fi
+ # POWERPROFILESPANEL
+ if [ -z "$POWERPROFILESPANEL" -a "$GPU" = "amd" ]; then
+  POWERPROFILESPANEL="enabled"
+ fi
+ # POWERPROFILESDPM
+ if [ -z "$POWERPROFILESDPM" -a "$GPU" = "amd" ]; then
+  POWERPROFILESDPM="enabled"
+ fi
+ # PERFBIAS
+ if [ -z "$PERFBIAS" -a "$CPU" = "intel" ]; then
+  PERFBIAS="1"
+ fi
+ # EPP
+ if [ -z "$EPP" ]; then
+  EPP="power"
+ fi
+ # TURBOBOOST
+ if [ -z "$TURBOBOOST" ]; then
+  TURBOBOOST="0"
+ fi
+ # BACKLIGHT
+ if [ -z "$BACKLIGHT" ]; then
+  BACKLIGHT="10"
+ fi
+fi
+echo "*** PRESET = $PRESET" | tee -a "$LOGFILE"
+
+## CPUGOV
+# Configured options are performance, ondemand, and powersave.
+# Default is performance governor.
+if [ -z "$CPUGOV" ]; then
+ CPUGOV="performance"
+fi
+echo "*** CPUGOV = $CPUGOV" | tee -a "$LOGFILE"
+
+## CPUMIN default
+# Provide value in megahertz (M).
+# Default is 1.
+# Note: A low value like "1" will default to the lowest supported value.
+if [ -z "$CPUMIN" ]; then
+ CPUMIN="1"
+fi
+echo "*** CPUMIN = $CPUMIN" | tee -a "$LOGFILE"
+
+## CPUMAX
+# Provide value in megahertz (M).
+# Default is 9999.
+# Note: A high value like "9999" will default to the highest supported value.
+if [ -z "$CPUMAX" ]; then
+ CPUMAX="9999"
+fi
+echo "*** CPUMAX = $CPUMAX" | tee -a "$LOGFILE"
+
+## POWERPROFILES
+# Options are performance, balanced, and power-saver.
+# Default is performance.
+if [ -z "$POWERPROFILES" ]; then
+ POWERPROFILES="performance"
+fi
+echo "*** POWERPROFILES = $POWERPROFILES" | tee -a "$LOGFILE"
+
+## AMD GPU
+if [ "$GPU" = "amd" ]; then
+ ## POWERPROFILESPANEL
+ # Options are enable and disable.
+ # Default is disable.
+ if [ -z "$POWERPROFILESPANEL" ]; then
+  POWERPROFILESPANEL="disable"
+ fi
+ echo "*** POWERPROFILESPANEL = $POWERPROFILESPANEL" | tee -a "$LOGFILE"
+
+ ## POWERPROFILESDPM
+ # Options are enable and disable.
+ # Default is disable.
+ if [ -z "$POWERPROFILESDPM" ]; then
+  POWERPROFILESDPM="disable"
+ fi
+ echo "*** POWERPROFILESDPM = $POWERPROFILESDPM" | tee -a "$LOGFILE"
+fi
+
+## INTEL CPU
+if [ "$CPU" = "intel" ]; then
+ ## PERFBIAS
+ # Options are 0-15.
+ if [ -z "$PERFBIAS" ]; then
+  PERFBIAS="15"
+ fi
+ echo "*** PERFBIAS = $PERFBIAS" | tee -a "$LOGFILE"
+fi
+
+## AMD CPU
+if [ "$CPU" = "amd" ]; then
+ ## AMDPSTATEMODE
+ # Options are active, guided, or passive.
+ # Default is disable.
+ if [ -z "$AMDPSTATEMODE" ]; then
+  AMDPSTATEMODE="passive"
+ fi
+ echo "*** AMDPSTATEMODE = $AMDPSTATEMODE" | tee -a "$LOGFILE"
+fi
+
+## EPP
+# Options are default, performance, balance_performance, balance_power, and power.
+# Default is performance.
+if [ -z "$EPP" ]; then
+ EPP="performance"
+fi
+echo "*** EPP = $EPP" | tee -a "$LOGFILE"
+
+## TURBOBOOST default
+# Options are 0 or 1 (off or on).
+# Default is 1.
+if [ -z "$TURBOBOOST" ]; then
+ TURBOBOOST="1"
+fi
+echo "*** TURBOBOOST = $TURBOBOOST" | tee -a "$LOGFILE"
+
+## BACKLIGHT
+# Provide a value in percentage (1-100).
+# Default is 50.
+if [ -z "$BACKLIGHT" ]; then
+ BACKLIGHT="50"
+fi
+echo "*** BACKLIGHT = $BACKLIGHT" | tee -a "$LOGFILE"
+
+### RUN
+
+# Set CPUMIN, CPUMAX, CPUGOV
+sudo cpupower frequency-set -d "$CPUMIN"M -u "$CPUMAX"M -g "$CPUGOV" | tee -a "$LOGFILE";
+
+# Set PERFBIAS
+if [ "$CPU" = "intel" ]; then
+ sudo cpupower set --perf-bias "$PERFBIAS" | tee -a "$LOGFILE";
+fi
+
+# Set AMDPSTATEMODE
+if [ "$CPU" = "amd" ]; then
+ sudo cpupower set --amd-pstate-mode "$AMDPSTATEMODE" | tee -a "$LOGFILE";
+fi
+
+# Set EPP and TURBOBOOST
+sudo cpupower set --epp "$EPP" --turbo-boost "$TURBOBOOST" | tee -a "$LOGFILE";
+
+# Set TURBOBOOST Manually
+#echo "$TURBOBOOST" | sudo tee /sys/devices/system/cpu/cpufreq/boost | tee -a "$LOGFILE";
+
+# Set POWERPROFILES
+powerprofilesctl set "$POWERPROFILES" | tee -a "$LOGFILE";
+
+# Set POWERPROFILESPANEL and POWERPROFILESDPM
+if [ "$GPU" = "amd" ]; then
+ powerprofilesctl configure-action amdgpu_panel_power --"$POWERPROFILESPANEL" | tee -a "$LOGFILE";
+ powerprofilesctl configure-action amdgpu_dpm --"$POWERPROFILESDPM" | tee -a "$LOGFILE";
+fi
+
+# Set BACKLIGHT
+light -S "$BACKLIGHT"% | tee -a "$LOGFILE";
+
+## END LOG
+echo "*** END LOG" | tee -a "$LOGFILE"
+
+## EXIT
+echo "*** Done"
+exit
+
+## ENJOY

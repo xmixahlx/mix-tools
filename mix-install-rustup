@@ -1,27 +1,28 @@
 #!/bin/sh
 
 ### Package: mix-install-rustup
-### Version: v20241101.2300
+### Version: v0.20250928.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
+### OVERRIDES
+
 ## MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
 fi
-echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR.\n"
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-## OVERRIDES
-# Override debian.
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
-echo "*** INSTALLDEPS selected is $INSTALLDEPS.\n"
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
 echo "*** Uninstalling rustc, cargo, and rustup if installed."
-## DEBIAN OPTIONS LOOP
-if [ $INSTALLDEPS = debian ]; then
+## UNINSTALL DEBIAN PACKAGES
+if [ "$INSTALLDEPS" = debian ]; then
  sudo apt-get -y --purge remove rustc cargo rustup
  sudo apt-get -y autoremove
 fi
@@ -32,11 +33,17 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh \
 -s -- -q -y --default-toolchain nightly
 
 ## CONFIGURE
+#rustup set profile complete
+rustup set profile default
+rustup set auto-self-update enable
+rustup set auto-install enable
+rustup toolchain install stable
 rustup toolchain install nightly
 rustup component add rust-src
 rustup default nightly
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

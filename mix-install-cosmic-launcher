@@ -29,12 +29,29 @@ if [ -z $DESTDIR ]; then
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
+## COMPILEROVERRIDE
+if [ -z "$COMPILEROVERRIDE" ]; then
+ COMPILEROVERRIDE="ON"
+fi
+echo "*** COMPILEROVERRIDE selected is $COMPILEROVERRIDE."
+if [ "$COMPILEROVERRIDE" = "ON" ]; then
+ CFLAGS="$CFLAGSNOLTO"
+ CXXFLAGS="$CXXFLAGSNOLTO"
+ CPPFLAGS="$CPPFLAGSNOLTO"
+fi
+
+## RUSTVER
+if [ -z $RUSTVER ]; then
+ RUSTVER="stable"
+fi
+echo "*** RUSTVER selected is $RUSTVER."
+
 ## VARS
 RESDIR=$MIXTOOLSDIR/resources
 DEVDIR=$MIXTOOLSDIR/upstream
 GITURL=https://github.com
 GITREPO=pop-os
-GITTREE=launcher
+GITTREE=cosmic-launcher
 PKGDIR=$GITTREE\_$GITBRANCH
 MULTILIBDIR=`gcc -dumpmachine`
 
@@ -60,6 +77,9 @@ git clean -dfx
 git reset --hard
 git pull
 git submodule update --init
+
+## SET RUST VERSION
+rustup override set "$RUSTVER"
 
 ## IGNORE RUST VERSION
 rm -f rust-toolchain*

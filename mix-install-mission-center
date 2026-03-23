@@ -1,101 +1,110 @@
 #!/bin/sh
 
-### Package: mix-install-mission-center
-### Version: v20240611.2300
+### Package: mix-install-missioncenter
+### Version: v0.20250916.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
- MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
-fi
-echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+### OVERRIDES
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
-if [ -z $GITBRANCH ]; then
- GITBRANCH=main
+## GITBRANCH
+# Upstream branch is "main".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
-# CC
-if [ -z $CC ]; then
- CC="ccache gcc-14"
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
 fi
-echo "*** CC selected is $CC."
+echo "*** DESTDIR selected is $DESTDIR."
 
-# CXX
-if [ -z $CXX ]; then
- CXX="ccache g++-14"
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
 fi
-echo "*** CXX selected is $CXX."
+echo "*** BUILDTYPE selected is $BUILDTYPE."
 
-# CFLAGSOVERRIDE
-if [ -z $CFLAGSOVERRIDE ];then
- CFLAGSOVERRIDE=true
+## COMPILEROVERRIDE
+if [ -z "$COMPILEROVERRIDE" ]; then
+ COMPILEROVERRIDE="ON"
 fi
-echo "*** CFLAGSOVERRIDE selected is $CFLAGSOVERRIDE."
-
-# CFLAGS
-if [ $CFLAGSOVERRIDE = true ]; then
- CFLAGS="-O3 -march=native -fuse-ld=bfd"
- CPPFLAGS="$CFLAGS"
+if [ "$COMPILEROVERRIDE" = "ON" ]; then
+ CC="$CCSTABLE"
+ CPP="$CPPSTABLE"
+ CXX="$CXXSTABLE"
+ CFLAGS="$CFLAGSBASIC"
+ CXXFLAGS="$CXXFLAGSBASIC"
+ CPPFLAGS="$CPPFLAGSBASIC"
+ LD="$LDGOLD"
+ LDFLAGS="$LDFLAGSGOLD"
+else
+ COMPILEROVERRIDE="OFF"
 fi
-echo "*** CFLAGS selected is $CFLAGS."
+echo "*** COMPILEROVERRIDE selected is $COMPILEROVERRIDE."
 
-# GITPR
-if [ -z $GITPR ]; then
- GITPR=none
+## GITPR
+if [ -z "$GITPR" ]; then
+ GITPR="none"
 fi
 echo "*** GITPR selected is $GITPR."
 
 ## VARS
-DEVDIR=$MIXTOOLSDIR/upstream
-GITURL=https://gitlab.com
-GITREPO=mission-center-devs
-GITTREE=mission-center
-PKGDIR=$GITTREE\_$GITBRANCH
-GITPRURL=$GITURL
-GITPRPATCH=$GITPRURL/$GITREPO/$GITTREE/-/merge_requests/$GITPR.patch
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://gitlab.com"
+GITREPO="mission-center-devs"
+GITTREE="mission-center"
+PKGDIR="$GITTREE-$GITBRANCH"
+GITPRURL="$GITURL"
+GITPRPATCH="$GITPRURL/$GITREPO/$GITTREE/-/merge_requests/$GITPR.patch"
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## INSTALLDEPS
-if [ $INSTALLDEPS = debian ]; then
- sudo apt-get -y install build-essential coreutils libc-bin git meson
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git meson \
+ blueprint-compiler
 fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
 
 ## CLEAN
-sudo rm -Rf $PKGDIR/tmpbuild
+sudo rm -Rf "$PKGDIR/tmpbuild"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
 git reset --hard
 git pull
-git submodule update --init --recursive --depth=1
+git submodule update --init --recursive --depth=100
 
 ## GITPR
-if [ $GITPR != none ]; then
- rm -f $DEVDIR/$GITTREE\_$GITPR.patch
- wget $GITPRPATCH -O $DEVDIR/$GITTREE\_$GITPR.patch
- patch -p1 < $DEVDIR/$GITTREE\_$GITPR.patch
+if [ "$GITPR" != "none" ]; then
+ rm -f "$DEVDIR/$GITTREE-$GITPR.patch"
+ wget "$GITPRPATCH -O $DEVDIR/$GITTREE-$GITPR.patch"
+ patch -p1 < "$DEVDIR/$GITTREE-$GITPR.patch"
 fi
 
 ## CONFIGURE
-meson tmpbuild --prefix=/usr/local --libdir=/usr/local/lib/x86_64-linux-gnu --buildtype=release
+meson setup tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype="$BUILDTYPE"
 
 ## BUILD
 ninja -C tmpbuild
@@ -105,6 +114,7 @@ ninja -C tmpbuild install
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
 
 # ENJOY

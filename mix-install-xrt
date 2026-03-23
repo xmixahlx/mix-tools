@@ -1,0 +1,104 @@
+#!/bin/sh
+
+### Package: mix-install-xrt-npu
+### Version: v0.20250928.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: rapidjson
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+# INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+# GITBRANCH
+# Upstream branch is "master".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## COMPILEROVERRIDE
+# Broken with lto and gcc-16
+if [ -z "$COMPILEROVERRIDE" ]; then
+ COMPILEROVERRIDE="ON"
+fi
+if [ "$COMPILEROVERRIDE" = "ON" ]; then
+ CC="$CCSTABLE"
+ CPP="$CPPSTABLE"
+ CXX="$CXXSTABLE"
+ CFLAGS="$CFLAGSNATIVE"
+ CXXFLAGS="$CXXFLAGSNATIVE"
+ CPPFLAGS="$CPPFLAGSNATIVE"
+ LD=""
+ LDFLAGS=""
+else
+ COMPILEROVERRIDE="OFF"
+fi
+echo "*** COMPILEROVERRIDE selected is $COMPILEROVERRIDE."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="xilinx"
+GITTREE="xrt"
+GITPRURL="https://patch-diff.githubusercontent.com"
+GITPRPATCH="$GITPRURL/raw/$GITREPO/$GITTREE/pull/$GITPR.patch"
+PKGDIR="$GITTREE-$GITBRANCH"
+
+## INSTALLDEPS
+# Debian Dependencies
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git meson
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## CLEAN
+rm -Rf "$PKGDIR/build/Release"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --recursive --depth=100
+
+## GITPR
+if [ "$GITPR" ]; then
+ echo "*** GITPR selected is $GITPR."
+ rm -f "$DEVDIR/$GITTREE-$GITPR.patch"
+ wget "$GITPRPATCH" -O "$DEVDIR/$GITTREE-$GITPR.patch"
+ patch -p1 < "$DEVDIR/$GITTREE-$GITPR.patch"
+fi
+
+## BUILD
+cd build
+./build.sh -opt -npu
+
+## INSTALL
+echo "Install xrt Debian packages."
+sudo dpkg -i Release/xrt*base.deb
+sudo dpkg -i Release/xrt*base-dev.deb
+sudo dpkg -i Release/xrt*npu.deb
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

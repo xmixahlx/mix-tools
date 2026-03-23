@@ -1,7 +1,7 @@
 #! /bin/sh
 
 ### Package: mix-install-task-sway
-### Version: v0.20250629.2300
+### Version: v0.20251120.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -9,10 +9,10 @@
 ## OVERRIDES
 # MIXTOOLSDIR
 if [ -z "$MIXTOOLSDIR" ]; then
- export MIXTOOLSDIR="~/Development/XMIXAHLX/mix-tools"
- export PATH="$MIXTOOLSDIR":"$PATH"
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
-echo "*** MIXTOOLSDIR selected is "$MIXTOOLSDIR"."
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
 ## INSTALL
 mix-install-fontawesome

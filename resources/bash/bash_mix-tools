@@ -1,0 +1,370 @@
+# ~/.bash_mix-tools
+
+### HISTORY
+
+## BASH HISTORY
+HISTSIZE="-1"
+HISTFILESIZE="-1"
+
+### SYSTEM ALIASES
+
+## LS
+alias ll='ls -l'
+alias la='ls -A'
+alias l='ls -CF'
+
+### ENVIRONMENT EXPORTS
+
+## AMD XILINX
+export XILINX_XRT="/opt/xilinx/xrt"
+
+## PATH
+export MIXTOOLSDIR=/home/mike/Development/XMIXAHLX/mix-tools-master
+export NIXTOOLSDIR=/home/mike/Development/XMIXAHLX/mix-tools-master
+export XRTDIR="$XILINX_XRT"
+export ROCMDIR=/opt/rocm-current
+export LOCALDIR=~/.local
+export CARGODIR=~/.cargo
+export LLVMUPSTREAMDIR=/usr/local/llvm-current
+export PATH=~/bin:$MIXTOOLSDIR:$XRTDIR/bin:$ROCMDIR/bin:$LLVMUPSTREAMDIR/bin:$LOCALDIR/bin:$CARGODIR/bin:/usr/local/bin:/usr/bin:/sbin
+
+## OPTIMIZE
+export OPTIMIZE="3"
+export MTUNE="native"
+export MARCH="native"
+
+## CCACHE
+export CCACHE="ccache"
+
+## DEFAULT COMPILER
+# Options are GCC or CLANG
+if [ -z "$DEFAULTCOMPILER" ]; then
+ DEFAULTCOMPILER="GCC"
+fi
+
+### CLANG
+
+## CLANG VERSIONS
+CLANGVEROLDOLDSTABLE="20"
+CLANGVEROLDSTABLE="21"
+CLANGVERSTABLE="22"
+CLANGVERUPSTREAM="23"
+# Default
+if [ -z "$CLANGVER" ]; then
+ CLANGVER="23"
+fi
+
+## CLANG
+export CLANGDEFAULT="clang-$CLANGVER"
+export CLANGOLDOLDSTABLE="clang-$CLANGVEROLDOLDSTABLE"
+export CLANGOLDSTABLE="clang-$CLANGVEROLDSTABLE"
+export CLANGSTABLE="clang-$CLANGVERSTABLE"
+export CLANGUPSTREAM="clang-$CLANGVERUPSTREAM"
+
+## CLANGCPP
+export CLANGCPPDEFAULT="clang++-$CLANGVER"
+export CLANGCPPOLDOLDSTABLE="clang++-$CLANGVEROLDOLDSTABLE"
+export CLANGCPPOLDSTABLE="clang++-$CLANGVEROLDSTABLE"
+export CLANGCPPSTABLE="clang++-$CLANGVERSTABLE"
+export CLANGCPPUPSTREAM="clang++-$CLANGVERUPSTREAM"
+
+# CLANGPP
+export CLANGPPDEFAULT="clang-cpp-$CLANGVER"
+export CLANGPPOLDOLDSTABLE="clang-cpp-$CLANGVEROLDOLDSTABLE"
+export CLANGPPOLDSTABLE="clang-cpp-$CLANGVEROLDSTABLE"
+export CLANGPPSTABLE="clang-cpp-$CLANGVERSTABLE"
+export CLANGPPUPSTREAM="clang-cpp-$CLANGVERUPSTREAM"
+
+# CLANG DEFAULT
+export CLANG="$CLANGDEFAULT"
+export CLANGPP="$CLANGPPDEFAULT"
+export CLANGCPP="$CLANGCPPDEFAULT"
+
+### GNUCC
+
+## GCC VERSIONS
+GCCVEROLDOLDSTABLE="13"
+GCCVEROLDSTABLE="14"
+GCCVERSTABLE="15"
+GCCVERUPSTREAM="16"
+# Default
+if [ -z "$GCCVER" ]; then
+ GCCVER="$GCCVERUPSTREAM"
+fi
+
+## GNUCC
+export GNUCCDEFAULT="gcc-$GCCVER"
+export GNUCCOLDOLDSTABLE="gcc-$GCCVEROLDOLDSTABLE"
+export GNUCCOLDSTABLE="gcc-$GCCVEROLDSTABLE"
+export GNUCCSTABLE="gcc-$GCCVERSTABLE"
+export GNUCCUPSTREAM="gcc-$GCCVERUPSTREAM"
+
+## GNUCPP
+export GNUCPPDEFAULT="g++-$GCCVER"
+export GNUCPPOLDOLDSTABLE="g++-$GCCVEROLDOLDSTABLE"
+export GNUCPPOLDSTABLE="g++-$GCCVEROLDSTABLE"
+export GNUCPPSTABLE="g++-$GCCVERSTABLE"
+export GNUCPPUPSTREAM="g++-$GCCVERUPSTREAM"
+
+## GNUCXX
+export GNUCXXDEFAULT="g++-$GCCVER"
+export GNUCXXOLDOLDSTABLE="g++-$GCCVEROLDOLDSTABLE"
+export GNUCXXOLDSTABLE="g++-$GCCVEROLDSTABLE"
+export GNUCXXSTABLE="g++-$GCCVERSTABLE"
+export GNUCXXUPSTREAM="g++-$GCCVERUPSTREAM"
+
+## GCC DEFAULT
+export GNUCC="$GNUCCDEFAULT"
+export GNUCXX="$GNUCXXDEFAULT"
+export GNUCPP="$GNUCPPDEFAULT"
+
+### CC
+
+## CC DEFAULT
+if [ "$DEFAULTCOMPILER" = "CLANG" ]; then
+ export CCDEFAULT="$CLANGDEFAULT"
+ export CXXDEFAULT="$CLANGPPDEFAULT"
+ export CPPDEFAULT="$CLANGCPPDEFAULT"
+fi
+if [ "$DEFAULTCOMPILER" = "GCC" ]; then
+ export CCDEFAULT="$GNUCCDEFAULT"
+ export CXXDEFAULT="$GNUCXXDEFAULT"
+ export CPPDEFAULT="$GNUCPPDEFAULT"
+fi
+
+## CC STABLE
+if [ "$DEFAULTCOMPILER" = "CLANG" ]; then
+ export CCSTABLE="$CLANGCSTABLE"
+ export CXXSTABLE="$CLANGPPSTABLE"
+ export CPPSTABLE="$CLANGCPPSTABLE"
+fi
+if [ "$DEFAULTCOMPILER" = "GCC" ]; then
+ export CCSTABLE="$GNUCCSTABLE"
+ export CXXSTABLE="$GNUCXXSTABLE"
+ export CPPSTABLE="$GNUCPPSTABLE"
+fi
+
+## CC OLDSTABLE
+if [ "$DEFAULTCOMPILER" = "CLANG" ]; then
+ export CCOLDSTABLE="$CLANGOLDSTABLE"
+ export CXXOLDSTABLE="$CLANGPPOLDSTABLE"
+ export CPPOLDSTABLE="$CLANGCPPOLDSTABLE"
+fi
+if [ "$DEFAULTCOMPILER" = "GCC" ]; then
+ export CCOLDSTABLE="$GNUCCOLDSTABLE"
+ export CXXOLDSTABLE="$GNUCXXOLDSTABLE"
+ export CPPOLDSTABLE="$GNUCPPOLDSTABLE"
+fi
+
+## CC CCACHE
+if [ "$DEFAULTCOMPILER" = "CLANG" ]; then
+ export CCCCACHE="$CCACHE $CLANG"
+ export CPPCCACHE="$CCACHE $CLANGPP"
+ export CXXCCACHE="$CCACHE $CLANGCPP"
+fi
+if [ "$DEFAULTCOMPILER" = "GCC" ]; then
+ export CCCCACHE="$CCACHE $GNUCC"
+ export CPPCCACHE="$CCACHE $GNUCPP"
+ export CXXCCACHE="$CCACHE $GNUCXX"
+fi
+
+## CC NOCCACHE
+if [ "$DEFAULTCOMPILER" = "CLANG" ]; then
+ export CCNOCCACHE="$CLANG"
+ export CPPNOCCACHE="$CLANGPP"
+ export CXXNOCCACHE="$CLANGCPP"
+fi
+if [ "$DEFAULTCOMPILER" = "GCC" ]; then
+ export CCNOCCACHE="$GNUCC"
+ export CPPNOCCACHE="$GNUCPP"
+ export CXXNOCCACHE="$GNUCXX"
+fi
+
+## CC DEFAULT
+export CC="$CCCCACHE"
+export CPP="$CPPCCACHE"
+export CXX="$CXXCCACHE"
+
+### GNU CFLAGS
+
+## GNUCFLAGS BASIC
+export GNUCFLAGSBASIC="-O2 -fno-lto -pipe -Wno-error -Wno-incompatible-pointer-types"
+export GNUCPPFLAGSBASIC="-O2 -fno-lto -pipe -Wno-error"
+export GNUCXXFLAGSBASIC="-O2 -fno-lto -pipe -Wno-error"
+
+## GNUCFLAGS BASICLTO
+export GNUCFLAGSBASICLTO="-O2 -flto=auto -pipe -Wno-error -Wno-error -Wno-incompatible-pointer-types"
+export GNUCPPFLAGSBASICLTO="-O2 -flto=auto -pipe -Wno-error"
+export GNUCXXFLAGSBASICLTO="-O2 -flto=auto -pipe -Wno-error"
+
+## GNUCFLAGS NATIVE
+export GNUCFLAGSNATIVE="-O3 -march=native -mtune=native -pipe -fno-lto -Wno-error -Wno-incompatible-pointer-types"
+export GNUCPPFLAGSNATIVE="-O3 -march=native -mtune=native -pipe -fno-lto -Wno-error"
+export GNUCXXFLAGSNATIVE="-O3 -march=native -mtune=native -pipe -fno-lto -Wno-error"
+
+## GNUCFLAGS NATIVELTO
+export GNUCFLAGSNATIVELTO="-O3 -march=native -mtune=native -pipe -flto=auto -Wno-error -Wno-incompatible-pointer-types"
+export GNUCPPFLAGSNATIVELTO="-O3 -march=native -mtune=native -pipe -flto=auto -Wno-error"
+export GNUCXXFLAGSNATIVELTO="-O3 -march=native -mtune=native -pipe -flto=auto -Wno-error"
+
+## GNUCFLAGS DEFAULT
+export GNUCFLAGS="$GNUCFLAGSNATIVELTO"
+export GNUCPPFLAGS="$GNUCPPFLAGSNATIVELTO"
+export GNUCXXFLAGS="$GNUCXXFLAGSNATIVELTO"
+
+### CFLAGS
+
+## CFLAGS BASIC
+export CFLAGSBASIC="$GNUCFLAGSBASIC"
+export CPPFLAGSBASIC="$GNUCPPFLAGSBASIC"
+export CXXFLAGSBASIC="$GNUCXXFLAGSBASIC"
+
+## CFLAGS BASICLTO
+export CFLAGSBASICLTO="$GNUCFLAGSBASICLTO"
+export CPPFLAGSBASICLTO="$GNUCPPFLAGSBASICLTO"
+export CXXFLAGSBASICLTO="$GNUCXXFLAGSBASICLTO"
+
+## CFLAGS NATIVE
+export CFLAGSNATIVE="$GNUCFLAGSNATIVE"
+export CPPFLAGSNATIVE="$GNUCPPFLAGSNATIVE"
+export CXXFLAGSNATIVE="$GNUCXXFLAGSNATIVE"
+
+## CFLAGS NATIVELTO
+export CFLAGSNATIVELTO="$GNUCFLAGSNATIVELTO"
+export CPPFLAGSNATIVELTO="$GNUCPPFLAGSNATIVELTO"
+export CXXFLAGSNATIVELTO="$GNUCXXFLAGSNATIVELTO"
+
+## CFLAGS LTO
+export CFLAGSLTO="$GNUCFLAGSNATIVELTO"
+export CPPFLAGSLTO="$GNUCPPFLAGSNATIVELTO"
+export CXXFLAGSLTO="$GNUCXXFLAGSNATIVELTO"
+
+## CFLAGS NOLTO
+export CFLAGSNOLTO="$GNUCFLAGSNATIVE"
+export CPPFLAGSNOLTO="$GNUCPPFLAGSNATIVE"
+export CXXFLAGSNOLTO="$GNUCXXFLAGSNATIVE"
+
+## CFLAGS DEFAULT
+export CFLAGS="$CFLAGSLTO"
+export CPPFLAGS="$CPPFLAGSLTO"
+export CXXFLAGS="$CXXFLAGSLTO"
+
+### LD
+
+## DEFAULT LINKER
+DEFAULTLINKER="mold"
+
+## BASIC LINKER
+BASICLINKER="gold"
+
+## LD LD
+export LDBASIC="ld"
+export LDFLAGSBASIC=" -fuse-ld=ld"
+
+## LD BFD
+export LDBFD="bfd"
+export LDFLAGSBFD=" -fuse-ld=bfd"
+
+## LD GOLD
+export LDGOLD="gold"
+export LDFLAGSGOLD=" -fuse-ld=gold"
+
+## LD LLD
+export LDLLD="lld"
+export LDFLAGSLLD=" -fuse-ld=lld"
+
+## LD MOLD
+export LDMOLD="mold"
+export LDFLAGSMOLD=" -fuse-ld=mold"
+
+## LD BASIC
+export LDBASIC="$BASICLINKER"
+export LDFLAGSBASIC=" -fuse-ld=$BASICLINKER"
+
+## LD DEFAULT
+export LD="$DEFAULTLINKER"
+export LDFLAGS=" -fuse-ld=$DEFAULTLINKER"
+
+### RUST
+
+## RUST
+export RUSTFLAGSBASIC="-C opt-level=2 -C incremental=false -C lto=false"
+export RUSTFLAGSNATIVE="-C opt-level=3 -C target-cpu=native -C incremental=false -C lto=false"
+export RUSTFLAGSNATIVELTO="-C opt-level=3 -C target-cpu=native -C incremental=false -C lto=true"
+export RUSTFLAGSNATIVEMOLD="-C opt-level=3 -C target-cpu=native -C incremental=false -C lto=true -C linker=mold -C link-arg=-fuse-ld=mold"
+export RUSTFLAGS="$RUSTFLAGSNATIVE"
+export RUST_MIN_STACK=16777216
+
+## SCCACHE
+export RUSTC_WRAPPER="/usr/bin/sccache"
+export SCCACHE_CACHE_SIZE=100G
+export SCCACHE_MAX_FRAME_LENGTH=104857600
+
+### OTHER
+
+## MESA RADEONSI
+# https://docs.mesa3d.org/envvars.html
+export RUSTICL_ENABLE="radeonsi"
+export RUSTICL_FEATURES="fp16,fp64"
+export VAAPI_MPEG4_ENABLED="1"
+
+## LMSTUDIO
+export PATH="$PATH:/home/mike/.lmstudio/bin"
+
+## QT
+export QT_QPA_PLATFORM="wayland-egl"
+export QT_WAYLAND_FORCE_DPI="physical"
+export QT_WAYLAND_DISABLE_WINDOWDECORATION="1"
+export QT_DEBUG_PLUGINS="1"
+
+## FIREFOX
+export MOZ_ENABLE_WAYLAND="1"
+
+## GDK
+export GDK_BACKEND="wayland"
+
+## XDG
+export XDG_SESSION_TYPE="wayland"
+
+## SDL
+export SDL_VIDEODRIVER="wayland"
+
+## CLUTTER
+export CLUTTER_BACKEND="wayland"
+export CLUTTER_DEFAULT_FPS="60"
+
+## WLR
+export WLR_RENDERER="vulkan"
+
+## MAKEMKV
+export LIBAACS_PATH="libmmbd"
+export LIBDVDCSS_PATH="libmmbd"
+export LIBBDPLUS_PATH="libmmbd"
+
+### CUSTOM ALIASES
+
+## SVT-AV1 FORKS/VERSIONS
+alias SvtAv1EncApp-official-v3.1.2="LD_LIBRARY_PATH=/usr/local/svt-av1-v3.1.2/lib/x86_64-linux-gnu /usr/local/svt-av1-v3.1.2/bin/SvtAv1EncApp"
+alias SvtAv1EncApp-official-master="LD_LIBRARY_PATH=/usr/local/svt-av1-master/lib/x86_64-linux-gnu /usr/local/svt-av1-master/bin/SvtAv1EncApp"
+alias SvtAv1EncApp-hdr-main="LD_LIBRARY_PATH=/usr/local/svt-av1-hdr-main/lib/x86_64-linux-gnu /usr/local/svt-av1-hdr-main/bin/SvtAv1EncApp"
+alias SvtAv1EncApp-psy-master="LD_LIBRARY_PATH=/usr/local/svt-av1-psy-master/lib/x86_64-linux-gnu /usr/local/svt-av1-psy-master/bin/SvtAv1EncApp"
+alias SvtAv1EncApp-psyex-testing="LD_LIBRARY_PATH=/usr/local/svt-av1-psyex-testing/lib/x86_64-linux-gnu /usr/local/svt-av1-psyex-testing/bin/SvtAv1EncApp"
+alias SvtAv1EncApp-essential-3.1.0="LD_LIBRARY_PATH=/usr/local/svt-av1-essential-3.1.0/lib/x86_64-linux-gnu /usr/local/svt-av1-essential-3.1.0/bin/SvtAv1EncApp"
+alias SvtAv1EncApp-essential-3.1.2="LD_LIBRARY_PATH=/usr/local/svt-av1-essential-3.1.2/lib/x86_64-linux-gnu /usr/local/svt-av1-essential-3.1.2/bin/SvtAv1EncApp"
+alias SvtAv1EncApp-official="SvtAv1EncApp-official-v3.1.2"
+alias SvtAv1EncApp-hdr="SvtAv1EncApp-hdr-main"
+alias SvtAv1EncApp-psy="SvtAv1EncApp-psy-master"
+alias SvtAv1EncApp-psyex="SvtAv1EncApp-psyex-testing"
+alias SvtAv1EncApp-essential="SvtAv1EncApp-essential-3.1.2"
+
+## FFMPEG VERSIONS
+alias ffmpeg-6.1="LD_LIBRARY_PATH=/usr/local/ffmpeg-release-6.1/lib/x86_64-linux-gnu/ /usr/local/ffmpeg-release-6.1/bin/ffmpeg"
+alias ffmpeg-7.0="LD_LIBRARY_PATH=/usr/local/ffmpeg-release-7.0/lib/x86_64-linux-gnu/ /usr/local/ffmpeg-release-7.0/bin/ffmpeg"
+alias ffmpeg-7.1="LD_LIBRARY_PATH=/usr/local/ffmpeg-release-7.1/lib/x86_64-linux-gnu/ /usr/local/ffmpeg-release-7.1/bin/ffmpeg"
+alias ffmpeg-master="LD_LIBRARY_PATH=/usr/local/ffmpeg-master/lib/x86_64-linux-gnu/ /usr/local/ffmpeg-master/bin/ffmpeg"
+
+## FFMPEG HWACCEL
+alias ffmpeg-vulkan="ffmpeg -init_hw_device vulkan=vk:0 -hwaccel vulkan -hwaccel_output_format vulkan -filter_hw_device vk"
+alias ffmpeg-vaapi="ffmpeg -init_hw_device vaapi=vaapi:/dev/dri/renderD128 -hwaccel vaapi -hwaccel_output_format vaapi -hwaccel_device vaapi"
+
+### END

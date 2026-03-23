@@ -1,57 +1,71 @@
 #!/bin/sh
 
 ### Package: mix-install-alacritty
-### Version: v20220710.2300
+### Version: v0.20250809.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
  INSTALLDEPS=debian
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
+## GITBRANCH
 # Upstream branch is "master". Recent stable is v0.10.1
-if [ -z $GITBRANCH ]; then
+if [ -z "$GITBRANCH" ]; then
  GITBRANCH=master
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
 ## VARS
-DEVDIR=$MIXTOOLSDIR/upstream
-GITURL=https://github.com
-GITREPO=alacritty
-GITTREE=alacritty
-PKGDIR=$GITTREE\_$GITBRANCH
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="alacritty"
+GITTREE="alacritty"
+PKGDIR="$GITTREE-$GITBRANCH"
 
 ## DEPS
 # Provide INSTALLDEPS=debian to install dependencies.
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y install build-essential coreutils libc-bin wget patch \
  libfontconfig-dev libfreetype-dev libxcb1-dev libc6-dev libexpat1-dev \
  libuuid1 uuid-dev libpng-dev zlib1g-dev libxau-dev libxdmcp-dev libbsd-dev \
- ncurses-bin libncurses-dev fish cargo libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
- desktop-file-utils
+ ncurses-bin libncurses-dev fish libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+ desktop-file-utils scdoc
 fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --recursive --depth=1 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 # Not using -d to retain cargo build directory for faster builds.
 git clean -fx
 git reset --hard
@@ -59,26 +73,41 @@ git pull
 git submodule update --init --recursive --depth=1
 
 ## BUILD
-RUSTFLAGS="-C target-cpu=native" cargo build --release
+if [ "$BUILDTYPE" = "release" ]; then
+ cargo build --release
+else
+ cargo build
+fi
+
+# MAN
+scdoc < extra/man/alacritty.1.scd | gzip -c | tee extra/man/alacritty.1.gz > /dev/null
+scdoc < extra/man/alacritty-msg.1.scd | gzip -c | tee extra/man/alacritty-msg.1.gz > /dev/null
+scdoc < extra/man/alacritty.5.scd | gzip -c | tee extra/man/alacritty.5.gz > /dev/null
+scdoc < extra/man/alacritty-bindings.5.scd | gzip -c | tee extra/man/alacritty-bindings.5.gz > /dev/null
 
 ## INSTALL
-sudo desktop-file-install -m 644 --dir "/usr/local/share/applications/" "extra/linux/Alacritty.desktop"
-sudo install -D -m644 "extra/linux/org.alacritty.Alacritty.appdata.xml" "/usr/local/share/appdata/io.alacritty.Alacritty.appdata.xml"
-
-sudo install -D -m644 "extra/alacritty.man" "/usr/local/share/man/man1/alacritty.1"
-sudo install -D -m644 "extra/completions/alacritty.bash" "/usr/local/share/bash-completion/completions/alacritty"
-sudo install -D -m644 "extra/completions/_alacritty" "/usr/local/share/zsh/site-functions/_alacritty"
-sudo install -D -m644 "extra/completions/alacritty.fish" "/usr/local/share/fish/vendor_completions.d/alacritty.fish"
-sudo install -D -m644 "extra/logo/alacritty-term.svg" "/usr/local/share/pixmaps/Alacritty.svg"
-sudo install -D -m755 "target/release/alacritty" "/usr/local/bin/alacritty"
+sudo install -D -m755 "target/$BUILDTYPE/alacritty" "$DESTDIR/bin/alacritty"
+sudo install -D -m644 "extra/logo/alacritty-term.svg" "$DESTDIR/share/pixmaps/Alacritty.svg"
+sudo install -D -m644 "extra/linux/org.alacritty.Alacritty.appdata.xml" "$DESTDIR/share/appdata/io.alacritty.Alacritty.appdata.xml"
+sudo install -D -m644 "extra/man/alacritty.1.gz" "$DESTDIR/share/man/man1/alacritty.1.gz"
+sudo install -D -m644 "extra/man/alacritty-msg.1.gz" "$DESTDIR/share/man/man1/alacritty-msg.1.gz"
+sudo install -D -m644 "extra/man/alacritty.5.gz" "$DESTDIR/share/man/man1/alacritty.5.gz"
+sudo install -D -m644 "extra/man/alacritty-bindings.5.gz" "$DESTDIR/share/man/man1/alacritty-bindings.5.gz"
+sudo install -D -m644 "extra/completions/alacritty.bash" "$DESTDIR/share/bash-completion/completions/alacritty"
+sudo install -D -m644 "extra/completions/_alacritty" "$DESTDIR/share/zsh/site-functions/_alacritty"
+sudo install -D -m644 "extra/completions/alacritty.fish" "$DESTDIR/share/fish/vendor_completions.d/alacritty.fish"
+sudo desktop-file-install -m 644 --dir "$DESTDIR/share/applications/" "extra/linux/Alacritty.desktop"
+sudo update-desktop-database
+sudo tic -xe alacritty,alacritty-direct extra/alacritty.info
 
 ## UPDATE-ALTERNATIVES
-if [ $INSTALLDEPS = debian ]; then
- sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/local/bin/alacritty 999
- sudo update-alternatives --set x-terminal-emulator /usr/local/bin/alacritty
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo update-alternatives --install "/usr/bin/x-terminal-emulator" "x-terminal-emulator" "$DESTDIR/bin/alacritty" "999"
+ sudo update-alternatives --set "x-terminal-emulator" "$DESTDIR/bin/alacritty"
 fi
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

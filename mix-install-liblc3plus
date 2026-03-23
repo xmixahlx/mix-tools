@@ -1,0 +1,140 @@
+#!/bin/sh
+
+### Package: mix-install-liblc3plus
+### Version: v0.20250928.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+# Upstream branch is "master".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## TMPDIR
+if [ -z "$TMPDIR" ]; then
+ TMPDIR="/tmp/mix-tools"
+fi
+echo "*** TMPDIR selected is $TMPDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+## ETSIPARAMS
+ETSIFILE131="ts_103634v010301p0.zip"
+ETSIFILE141="ts_103634v010401p0.zip"
+ETSIURL131="https://www.etsi.org/deliver/etsi_ts/103600_103699/103634/01.03.01_60/ts_103634v010301p0.zip"
+ETSIURL141="https://www.etsi.org/deliver/etsi_ts/103600_103699/103634/01.04.01_60/ts_103634v010401p0.zip"
+ETSIDIR131="ETSI_Release/LC3plus_ETSI_src_v172062927c2_20210930/src/floating_point/"
+ETSIDIR141="ETSI_Release/LC3plus_ETSI_src_va15eb59632b_20230228/src/floating_point"
+
+## ETSIVER
+# Pipewire currently works with v1.3.1
+if [ -z "$ETSIVER" ]; then
+ ETSIVER="1.3.1"
+fi
+## 1.4.1
+if [ "$ETSIVER" = "1.4.1" ]; then
+ ETSIFILE="$ETSIFILE141"
+ ETSIURL="$ETSIURL141"
+ ETSIDIR="$ETSIDIR141"
+fi
+# 1.3.1
+if [ "$ETSIVER" = "1.3.1" ]; then
+ ETSIFILE="$ETSIFILE131"
+ ETSIURL="$ETSIURL131"
+ ETSIDIR="$ETSIDIR131"
+fi
+# Fail
+if [ "$ETSIVER" != "1.4.1" -a "$ETSIVER" != "1.3.1" ]; then
+ echo "*** ETSIVER not selected correctly. Options are 1.4.1 or 1.3.1."
+ exit
+fi
+echo "*** ETSIVER selected is $ETSIVER."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="pld-linux"
+GITTREE="liblc3plus"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+### INSTALLDEPS
+# Debian
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+mkdir -p "$TMPDIR/$PKGDIR"
+cd "$DEVDIR"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init
+
+## ETSIFILE
+# Download
+if [ ! -f "$DEVDIR/$ETSIFILE" ]; then
+ wget "$ETSIURL"
+ cp "$ETSIFILE" "$DEVDIR/"
+fi
+# Unpack
+unzip "$DEVDIR/$ETSIFILE"
+
+## PREP
+sed -i s+@VERSION@+$ETSIVER+g CMakeLists.txt.in
+cp CMakeLists.txt.in CMakeLists.txt
+cp "CMakeLists.txt" "$ETSIDIR/"
+cp "LC3plus.pc.in" "$ETSIDIR/"
+cp "libLC3plus.spec" "$ETSIDIR/"
+
+## CONFIGURE
+cd "$ETSIDIR"
+cmake -DCMAKE_INSTALL_PREFIX="$DESTDIR" -DCMAKE_INSTALL_LIBDIR="$DESTDIR/lib/$MULTILIBDIR" \
+-DCMAKE_BUILD_TYPE="$BUILDTYPE" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+-DUSE_CCACHE=ON -DBUILD_SHARED_LIBS=ON -DNATIVE=ON -B "tmpbuild" -G Ninja
+
+## BUILD
+ninja -C tmpbuild
+
+## INSTALL
+sudo ninja -C tmpbuild install
+sudo ldconfig
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

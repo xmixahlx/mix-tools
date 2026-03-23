@@ -1,0 +1,29 @@
+#!/bin/sh
+
+### Package: nix-install-zoom
+### Version: v0.20250928.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+## KILL
+killall zoom
+
+## PREP
+set -e
+rm -Rf /tmp/zoom*.deb
+
+## DOWNLOAD
+wget "https://zoom.us/client/latest/zoom_amd64.deb" -O "/tmp/zoom_amd64.deb"
+
+## INSTALL
+sudo dpkg -i "/tmp/zoom_amd64.deb"
+
+## FIX (POSSIBLE) MISSING PACKAGES
+sudo apt-get -f install
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

@@ -1,0 +1,34 @@
+diff --git a/Auto-Boost-Essential/Auto-Boost-Essential.py b/Auto-Boost-Essential/Auto-Boost-Essential.py
+index d93b9b4..6c8bd4f 100644
+--- a/Auto-Boost-Essential/Auto-Boost-Essential.py
++++ b/Auto-Boost-Essential/Auto-Boost-Essential.py
+@@ -839,7 +839,7 @@ def calculate_ssimu2() -> None:
+         result = core.vszip.Metrics(cut_source_clip, cut_encoded_clip, mode=0)
+     else:
+         try:
+-            result = core.vship.SSIMULACRA2(cut_source_clip, cut_encoded_clip)
++            result = core.vship.SSIMULACRA2(cut_source_clip, cut_encoded_clip, numStream=3)
+         except:
+             console.print(f"[yellow]Vship not found or available, defaulting to vs-zip.")
+             try:
+@@ -868,13 +868,13 @@ def calculate_ssimu2() -> None:
+ 
+         def progress_func(n: int, num_frames: int) -> None:
+             progress.update(task, advance=skip)
+-
+-        clip_async_render(
+-            result,
+-            outfile=None,
+-            progress=progress_func,
+-            callback=get_ssimu2props
+-        )
++        
++        i = 0
++        numframe = len(result.frames())
++        for frame in result.frames():
++            get_ssimu2props(i, frame)
++            progress_func(i, numframe)
++            i += 1
+ 
+         progress.update(task, description="[cyan]Calculated SSIMULACRA2 scores ", completed=cut_source_clip.num_frames*skip)
+ 

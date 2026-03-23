@@ -1,0 +1,12 @@
+diff --git a/src/ssimu2/main.hpp b/src/ssimu2/main.hpp
+index 3dc28c5..88d3d1c 100644
+--- a/src/ssimu2/main.hpp
++++ b/src/ssimu2/main.hpp
+@@ -114,6 +114,7 @@ double ssimu2process(const uint8_t *srcp1[3], const uint8_t *srcp2[3], float3* p
+     float3* mem_d;
+     erralloc = hipMallocAsync(&mem_d, sizeof(float3)*totalscalesize*(2) + std::max((int64_t)sizeof(float3)*totalscalesize, stride*height*3), stream); //2 base image and 1 reduction+copy buffer
+     if (erralloc != hipSuccess){
++        std::cout << "Exact HIP Error Returned " << hipGetErrorString(erralloc) << std::endl;
+         throw VshipError(OutOfVRAM, __FILE__, __LINE__);
+     }
+ 

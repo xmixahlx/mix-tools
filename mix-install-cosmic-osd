@@ -29,6 +29,12 @@ if [ -z $DESTDIR ]; then
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
+## RUSTVER
+if [ -z $RUSTVER ]; then
+ RUSTVER="stable"
+fi
+echo "*** RUSTVER selected is $RUSTVER."
+
 ## VARS
 RESDIR=$MIXTOOLSDIR/resources
 DEVDIR=$MIXTOOLSDIR/upstream
@@ -61,16 +67,27 @@ git reset --hard
 git pull
 git submodule update --init
 
+## SET RUST VERSION
+rustup override set "$RUSTVER"
+
 ## IGNORE RUST VERSION
 rm -f rust-toolchain*
+
+## BUILD
+just build-release
+
+## INSTALL
+sudo just prefix="$DESTDIR" install
+
+## EXIT
+exit
+
+## ENJOY
+
+
 
 ## BUILD
 make
 
 ## INSTALL
 sudo make prefix=$DESTDIR install
-
-## EXIT
-exit
-
-## ENJOY

@@ -26,15 +26,6 @@ if [ -z $GITBRANCH ]; then
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
-# CFLAGS
-if [ -z $CFLAGS ]; then
- CFLAGS="-O3 -march=native"
- CPPFLAGS="$CFLAGS"
- export CFLAGS=$CFLAGS
- export CPPFLAGS=$CPPFLAGS
-fi
-echo "*** CFLAGS selected is $CFLAGS."
-
 # GITPR
 if [ -z $GITPR ]; then
  GITPR=none

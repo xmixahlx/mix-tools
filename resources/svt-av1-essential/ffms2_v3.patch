@@ -1,0 +1,1278 @@
+diff --git a/Build/linux/build.sh b/Build/linux/build.sh
+index 77787d6a..5d38ea8c 100755
+--- a/Build/linux/build.sh
++++ b/Build/linux/build.sh
+@@ -111,6 +111,8 @@ For each enable-*, there is a disable-* option, and vice versa.
+     minimal-build
+     --rtc-build,        Do RTC build, ie reduced feature set
+     rtc-build
++    --use-ffms2,        Enable FFMS2 support (Install FFMS2 first)
++    use-ffms2
+     --log-quiet,        Do not log anything from the core encoder
+     log-quiet
+ 
+@@ -351,6 +353,7 @@ parse_options() {
+         verbose) CMAKE_EXTRA_FLAGS="$CMAKE_EXTRA_FLAGS -DCMAKE_VERBOSE_MAKEFILE=1" && shift ;;
+         minimal-build) CMAKE_EXTRA_FLAGS="$CMAKE_EXTRA_FLAGS -DMINIMAL_BUILD=ON" && shift ;;
+         rtc-build) CMAKE_EXTRA_FLAGS="$CMAKE_EXTRA_FLAGS -DRTC_BUILD=ON" && shift ;;
++        use-ffms2) CMAKE_EXTRA_FLAGS="$CMAKE_EXTRA_FLAGS -DUSE_FFMS2=ON" && shift ;;
+         log-quiet) CMAKE_EXTRA_FLAGS="$CMAKE_EXTRA_FLAGS -DLOG_QUIET=ON" && shift ;;
+         *) print_message "Unknown option: $1" && shift ;;
+         esac
+@@ -396,6 +399,7 @@ else
+             verbose) parse_options verbose && shift ;;
+             minimal-build) parse_options minimal-build && shift ;;
+             rtc-build) parse_options rtc-build && shift ;;
++            use-ffms2) parse_options use-ffms2 && shift ;;
+             log-quiet) parse_options log-quiet && shift ;;
+             asm | bindir | cc | cxx | gen | jobs | pgo-dir | pgo-videos | prefix | sanitizer | target_system | android-ndk)
+                 parse_equal_option "$1" "$2"
+@@ -521,6 +525,7 @@ else
+             verbose) parse_options verbose && shift ;;
+             minimal-build) parse_options minimal-build && shift ;;
+             rtc-build) parse_options rtc-build && shift ;;
++            use-ffms2) parse_options use-ffms2 && shift ;;
+             log-quiet) parse_options log-quiet && shift ;;
+             end) ${IN_SCRIPT:-false} && exit ;;
+             *) die "Error, unknown option: $1" ;;
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 57100575..b16bb4ca 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -641,6 +641,32 @@ add_subdirectory(Source/Lib)
+ if(BUILD_APPS)
+     add_subdirectory(Source/App)
+ endif()
++
++option(USE_FFMS2 "Enable FFMS2 support (Install FFMS2 first)" OFF)
++if(USE_FFMS2)
++    find_path(FFMS2_INCLUDE_DIR
++        NAMES ffms.h
++        PATHS
++            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ffms2/include
++    )
++
++    find_library(FFMS2_LIBRARY
++        NAMES ffms2 libffms2
++        PATHS
++            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ffms2/lib
++    )
++
++    if(FFMS2_INCLUDE_DIR AND FFMS2_LIBRARY)
++        message(STATUS "Found FFMS2: ${FFMS2_LIBRARY}")
++        target_include_directories(SvtAv1EncApp PRIVATE ${FFMS2_INCLUDE_DIR})
++        target_link_libraries(SvtAv1EncApp ${FFMS2_LIBRARY})
++        target_compile_definitions(SvtAv1EncApp PRIVATE HAVE_FFMS2=1)
++    else()
++        message(WARNING "FFMS2 not found, building without FFMS2 support")
++        target_compile_definitions(SvtAv1EncApp PRIVATE HAVE_FFMS2=0)
++    endif()
++endif()
++
+ if(SVT_AV1_PGO)
+     string(REPLACE ";" "::" SVT_AV1_PGO_CUSTOM_VIDEOS "${SVT_AV1_PGO_CUSTOM_VIDEOS}")
+ 
+diff --git a/Source/App/app_config.c b/Source/App/app_config.c
+index 17c3db04..f87cb587 100644
+--- a/Source/App/app_config.c
++++ b/Source/App/app_config.c
+@@ -34,6 +34,10 @@
+ #include "third_party/safestringlib/safe_str_lib.h"
+ #endif
+ 
++#if defined(_WIN32)
++#define strcasecmp _stricmp
++#endif
++
+ /**********************************
+  * Defines
+  **********************************/
+@@ -342,6 +346,25 @@ static EbErrorType set_cfg_input_file(EbConfig *cfg, const char *token, const ch
+         return validate_error(EB_ErrorBadParameter, token, "");
+     }
+ 
++    cfg->input_file_path = strdup(value);
++
++    const char *ext = strrchr(value, '.');
++    if (ext && strcasecmp(ext, ".yuv") && strcasecmp(ext, ".y4m") &&
++        strcmp(value, "stdin") && strcmp(value, "-")) {
++#if HAVE_FFMS2
++        cfg->use_ffms2 = true;
++        // Don't open file handle for FFMS2 inputs
++        cfg->input_file = NULL;
++        cfg->input_file_is_fifo = false;
++        cfg->y4m_input = false;
++        return EB_ErrorNone;
++    }
++#else
++        fputs("Error: This build does not have FFMS2 support\n", stderr);
++        return EB_ErrorBadParameter;
++    }
++#endif
++
+     if (!strcmp(value, "stdin") || !strcmp(value, "-")) {
+         cfg->input_file         = stdin;
+         cfg->input_file_is_fifo = true;
+@@ -1418,6 +1441,11 @@ void svt_config_dtor(EbConfig *app_cfg) {
+     if (!app_cfg)
+         return;
+     // Close any files that are open
++    if (app_cfg->input_file_path) {
++        free(app_cfg->input_file_path);
++        app_cfg->input_file_path = NULL;
++    }
++
+     if (app_cfg->input_file) {
+         if (!app_cfg->input_file_is_fifo)
+             fclose(app_cfg->input_file);
+@@ -1744,7 +1772,7 @@ static EbErrorType app_verify_config(EbConfig *app_cfg, uint32_t channel_number)
+     EbErrorType return_error = EB_ErrorNone;
+ 
+     // Check Input File
+-    if (app_cfg->input_file == (FILE *)NULL) {
++    if (app_cfg->input_file == (FILE *)NULL && !app_cfg->use_ffms2) {
+         fprintf(app_cfg->error_log_file, "Error instance %u: Invalid Input File\n", channel_number + 1);
+         return_error = EB_ErrorBadParameter;
+     }
+@@ -2695,7 +2723,7 @@ EbErrorType read_command_line(int32_t argc, char *const argv[], EncChannel *chan
+ 
+                 // For pipe input it is fine if we have -1 here (we will update on end of stream)
+                 if (app_cfg->frames_to_be_encoded == -1 && app_cfg->input_file != stdin &&
+-                    !app_cfg->input_file_is_fifo) {
++                    !app_cfg->input_file_is_fifo && !app_cfg->use_ffms2) {
+                     fprintf(app_cfg->error_log_file,
+                             "Error instance %u: Input yuv does not contain enough frames \n",
+                             index + 1);
+diff --git a/Source/App/app_config.h b/Source/App/app_config.h
+index 693b938e..1b6f5d18 100644
+--- a/Source/App/app_config.h
++++ b/Source/App/app_config.h
+@@ -120,6 +120,7 @@ typedef struct EbConfig {
+      * File I/O
+      ****************************************/
+     FILE      *input_file;
++    char      *input_file_path;
+     MemMapFile mmap; //memory mapped file handler
+     bool       input_file_is_fifo;
+     FILE      *bitstream_file;
+@@ -188,6 +189,11 @@ typedef struct EbConfig {
+     uint8_t instance_idx;
+ 
+     char *fgs_table_path;
++
++    bool  use_ffms2;
++    void *ffms_video_source;
++    void *ffms_index;
++    int   ffms_track_num;
+ } EbConfig;
+ 
+ typedef struct EncChannel {
+diff --git a/Source/App/app_context.c b/Source/App/app_context.c
+index 868e2bd9..2a320c92 100644
+--- a/Source/App/app_context.c
++++ b/Source/App/app_context.c
+@@ -19,12 +19,17 @@
+ #include <limits.h>
+ 
+ #include "EbSvtAv1.h"
++#include "EbSvtAv1Metadata.h"
+ #include "app_context.h"
+ #include "app_config.h"
+ #if DEBUG_ROI
+ #include <inttypes.h>
+ #endif
+ 
++#if HAVE_FFMS2
++#include "third_party/ffms2/include/ffms.h"
++#endif
++
+ /*************************************
+ **************************************
+ *** Helper functions Input / Output **
+@@ -403,6 +408,234 @@ static void deallocate_buffers(EbConfig *app_cfg) {
+ * Functions Implementation
+ ***************************************/
+ 
++#if HAVE_FFMS2
++static EbErrorType init_ffms2(EbConfig *app_cfg) {
++    FFMS_Init(0, 0);
++
++    FFMS_ErrorInfo err_info;
++    char errmsg[1024];
++    err_info.Buffer = errmsg;
++    err_info.BufferSize = sizeof(errmsg);
++    err_info.ErrorType = FFMS_ERROR_SUCCESS;
++    err_info.SubType = FFMS_ERROR_SUCCESS;
++
++    FFMS_Indexer *indexer = FFMS_CreateIndexer(app_cfg->input_file_path, &err_info);
++    if (!indexer) {
++        fprintf(stderr, "FFMS2 Error: Failed to create indexer for %s: %s\n",
++                app_cfg->input_file_path, errmsg);
++        return EB_ErrorBadParameter;
++    }
++
++    // Index the file (in memory only)
++    FFMS_Index *index = FFMS_DoIndexing2(indexer, FFMS_IEH_ABORT, &err_info);
++    if (!index) {
++        fprintf(stderr, "FFMS2 Error: Failed to index %s: %s\n",
++                app_cfg->input_file_path, errmsg);
++        return EB_ErrorBadParameter;
++    }
++
++    // Get first video track
++    int track_num = FFMS_GetFirstTrackOfType(index, FFMS_TYPE_VIDEO, &err_info);
++    if (track_num < 0) {
++        fprintf(stderr, "FFMS2 Error: No video tracks found in %s\n", app_cfg->input_file_path);
++        FFMS_DestroyIndex(index);
++        return EB_ErrorBadParameter;
++    }
++
++    FFMS_VideoSource *video_source = FFMS_CreateVideoSource(
++        app_cfg->input_file_path, track_num, index, -1, FFMS_SEEK_NORMAL, &err_info);
++    if (!video_source) {
++        fprintf(stderr, "FFMS2 Error: Failed to create video source: %s\n", errmsg);
++        FFMS_DestroyIndex(index);
++        return EB_ErrorBadParameter;
++    }
++
++    const FFMS_VideoProperties *props = FFMS_GetVideoProperties(video_source);
++
++    // Check first frame
++    const FFMS_Frame *test_frame = FFMS_GetFrame(video_source, 0, &err_info);
++    if (!test_frame) {
++        fprintf(stderr, "FFMS2 Error: Failed to get test frame: %s\n", errmsg);
++        FFMS_DestroyVideoSource(video_source);
++        FFMS_DestroyIndex(index);
++        return EB_ErrorBadParameter;
++    }
++
++    if (!(app_cfg->config.source_width != 0 && (uint32_t)test_frame->EncodedWidth != app_cfg->config.source_width)) {
++        app_cfg->config.source_width = test_frame->EncodedWidth;
++        app_cfg->input_padded_width = test_frame->EncodedWidth;
++    }
++    if (!(app_cfg->config.source_height != 0 && (uint32_t)test_frame->EncodedHeight != app_cfg->config.source_height)) {
++        app_cfg->config.source_height = test_frame->EncodedHeight;
++        app_cfg->input_padded_height = test_frame->EncodedHeight;
++    }
++
++    if (app_cfg->config.frame_rate_numerator != (uint32_t)props->FPSNumerator ||
++        app_cfg->config.frame_rate_denominator != (uint32_t)props->FPSDenominator) {
++        app_cfg->config.frame_rate_numerator = props->FPSNumerator;
++        app_cfg->config.frame_rate_denominator = props->FPSDenominator;
++    }
++
++    app_cfg->config.matrix_coefficients = test_frame->ColorSpace;
++    app_cfg->config.color_primaries = test_frame->ColorPrimaries;
++    app_cfg->config.transfer_characteristics = test_frame->TransferCharateristics;
++
++    if (test_frame->ColorRange == 2) {
++        app_cfg->config.color_range = EB_CR_FULL_RANGE;
++    } else {
++        app_cfg->config.color_range = EB_CR_STUDIO_RANGE;
++    }
++
++    if (test_frame->ChromaLocation == 1) {
++        app_cfg->config.chroma_sample_position = EB_CSP_VERTICAL;
++    } else if (test_frame->ChromaLocation == 3) {
++        app_cfg->config.chroma_sample_position = EB_CSP_COLOCATED;
++    } else {
++        app_cfg->config.chroma_sample_position = EB_CSP_UNKNOWN;
++    }
++
++    // HDR
++    if (test_frame->HasMasteringDisplayPrimaries && test_frame->HasMasteringDisplayLuminance) {
++        char md_buffer[256];
++        sprintf(md_buffer, "G(%g,%g)B(%g,%g)R(%g,%g)WP(%g,%g)L(%g,%g)",
++            test_frame->MasteringDisplayPrimariesX[1], test_frame->MasteringDisplayPrimariesY[1],
++            test_frame->MasteringDisplayPrimariesX[2], test_frame->MasteringDisplayPrimariesY[2],
++            test_frame->MasteringDisplayPrimariesX[0], test_frame->MasteringDisplayPrimariesY[0],
++            test_frame->MasteringDisplayWhitePointX, test_frame->MasteringDisplayWhitePointY,
++            test_frame->MasteringDisplayMaxLuminance, test_frame->MasteringDisplayMinLuminance);
++        fprintf(stderr, "HDR Metadata found:\nMasteringDisplay: G(%g,%g)B(%g,%g)R(%g,%g)WP(%g,%g)L(%g,%g)\n",
++            test_frame->MasteringDisplayPrimariesX[1], test_frame->MasteringDisplayPrimariesY[1],
++            test_frame->MasteringDisplayPrimariesX[2], test_frame->MasteringDisplayPrimariesY[2],
++            test_frame->MasteringDisplayPrimariesX[0], test_frame->MasteringDisplayPrimariesY[0],
++            test_frame->MasteringDisplayWhitePointX, test_frame->MasteringDisplayWhitePointY,
++            test_frame->MasteringDisplayMaxLuminance, test_frame->MasteringDisplayMinLuminance);
++        if (!svt_aom_parse_mastering_display(&app_cfg->config.mastering_display, md_buffer)) {
++            fprintf(stderr, "Warning: Failed to parse mastering display info\n");
++        }
++    }
++    if (test_frame->HasContentLightLevel) {
++        char cll_buffer[64];
++        sprintf(cll_buffer, "%u,%u",
++            test_frame->ContentLightLevelMax, test_frame->ContentLightLevelAverage);
++        fprintf(stderr, "ContentLightLevel: %u,%u\n",
++            test_frame->ContentLightLevelMax, test_frame->ContentLightLevelAverage);
++        if (!svt_aom_parse_content_light_level(&app_cfg->config.content_light_level, cll_buffer)) {
++            fprintf(stderr, "Warning: Failed to parse content light level info\n");
++        }
++    }
++
++    // Force output to 10-bit
++    int pixfmts[2];
++    pixfmts[0] = FFMS_GetPixFmt("yuv420p10le");
++    pixfmts[1] = -1;
++
++    if (FFMS_SetOutputFormatV2(video_source, pixfmts,
++                                app_cfg->input_padded_width, app_cfg->config.source_height,
++                                FFMS_RESIZER_BILINEAR, &err_info)) {
++        fprintf(stderr, "FFMS2 Error: Failed to set output format to yuv420p10le: %s\n", errmsg);
++        FFMS_DestroyVideoSource(video_source);
++        FFMS_DestroyIndex(index);
++        return EB_ErrorBadParameter;
++    }
++
++    app_cfg->ffms_video_source = video_source;
++    app_cfg->ffms_index = index;
++    app_cfg->ffms_track_num = track_num;
++
++    // Set encoder to 10-bit too
++    app_cfg->config.encoder_bit_depth = 10;
++
++    if (app_cfg->frames_to_be_encoded <= 0) {
++        app_cfg->frames_to_be_encoded = props->NumFrames - app_cfg->frames_to_be_skipped;
++    }
++
++    fprintf(stderr, "FFMS2: Initialized video source - %dx%d, %d frames, %.2f fps\n",
++            test_frame->EncodedWidth, test_frame->EncodedHeight, props->NumFrames,
++            (double)props->FPSNumerator / props->FPSDenominator);
++
++    if (app_cfg->config.source_width != (uint32_t)test_frame->EncodedWidth ||
++        app_cfg->config.source_height != (uint32_t)test_frame->EncodedHeight) {
++        fprintf(stderr, "FFMS2: Scaled from %dx%d to %dx%d\n",
++            test_frame->EncodedWidth, test_frame->EncodedHeight,
++            app_cfg->config.source_width, app_cfg->config.source_height);
++    }
++
++    return EB_ErrorNone;
++}
++
++static EbErrorType preload_frames_ffms2(EbConfig *app_cfg) {
++    FFMS_VideoSource *video_source = (FFMS_VideoSource *)app_cfg->ffms_video_source;
++    const FFMS_VideoProperties *props = FFMS_GetVideoProperties(video_source);
++
++    FFMS_ErrorInfo err_info;
++    char errmsg[1024];
++    err_info.Buffer = errmsg;
++    err_info.BufferSize = sizeof(errmsg);
++
++    const uint32_t width = app_cfg->input_padded_width;
++    const uint32_t height = app_cfg->input_padded_height;
++    const uint32_t chroma_width = width >> 1;
++    const uint32_t chroma_height = height >> 1;
++
++    // 10-bit = 2 bytes per sample
++    const size_t frame_size = (width * height + 2 * chroma_width * chroma_height) * 2;
++
++    app_cfg->sequence_buffer = calloc(app_cfg->buffered_input, sizeof(uint8_t *));
++    if (!app_cfg->sequence_buffer)
++        return EB_ErrorInsufficientResources;
++
++    int frames_to_load = app_cfg->buffered_input;
++    if (frames_to_load > props->NumFrames - app_cfg->frames_to_be_skipped) {
++        frames_to_load = props->NumFrames - app_cfg->frames_to_be_skipped;
++    }
++
++    for (int i = 0; i < frames_to_load; i++) {
++        app_cfg->sequence_buffer[i] = malloc(frame_size);
++        if (!app_cfg->sequence_buffer[i])
++            return EB_ErrorInsufficientResources;
++
++        const FFMS_Frame *frame = FFMS_GetFrame(video_source,
++                                                app_cfg->frames_to_be_skipped + i,
++                                                &err_info);
++        if (!frame) {
++            fprintf(stderr, "FFMS2 Error preloading frame %d: %s\n", i, errmsg);
++            return EB_ErrorBadParameter;
++        }
++
++        // Copy frame data
++        uint8_t *dst = app_cfg->sequence_buffer[i];
++        const uint8_t *src_y = frame->Data[0];
++        const uint8_t *src_u = frame->Data[1];
++        const uint8_t *src_v = frame->Data[2];
++
++        for (uint32_t y = 0; y < height; y++) {
++            memcpy(dst, src_y, width * 2);
++            dst += width * 2;
++            src_y += frame->Linesize[0];
++        }
++
++        for (uint32_t y = 0; y < chroma_height; y++) {
++            memcpy(dst, src_u, chroma_width * 2);
++            dst += chroma_width * 2;
++            src_u += frame->Linesize[1];
++        }
++
++        for (uint32_t y = 0; y < chroma_height; y++) {
++            memcpy(dst, src_v, chroma_width * 2);
++            dst += chroma_width * 2;
++            src_v += frame->Linesize[2];
++        }
++    }
++
++    // Fill remaining slots if looping is needed (though I disabled looping for FFMS2)
++    for (int i = frames_to_load; i < app_cfg->buffered_input; i++) {
++        app_cfg->sequence_buffer[i] = app_cfg->sequence_buffer[i % frames_to_load];
++    }
++
++    return EB_ErrorNone;
++}
++#endif
++
+ /***********************************
+  * Initialize Core & Component
+  ***********************************/
+@@ -411,6 +644,15 @@ EbErrorType init_encoder(EbConfig *app_cfg, uint32_t instance_idx) {
+     // Initialize Port Activity Flags
+     app_cfg->output_stream_port_active = APP_PortActive;
+ 
++#if HAVE_FFMS2
++    if (app_cfg->use_ffms2) {
++        EbErrorType ffms_ret = init_ffms2(app_cfg);
++        if (ffms_ret != EB_ErrorNone) {
++            return ffms_ret;
++        }
++    }
++#endif
++
+     if (app_cfg->roi_map_file != NULL) {
+         // Load ROI map data from file
+         app_cfg->config.enable_roi_map = true;
+@@ -449,8 +691,13 @@ EbErrorType init_encoder(EbConfig *app_cfg, uint32_t instance_idx) {
+         return return_error;
+     // Allocate the Sequence Buffer
+     if (app_cfg->buffered_input != -1) {
+-        // Preload frames into the ram for a faster yuv access time
+-        return_error = preload_frames_info_ram(app_cfg);
++        if (app_cfg->use_ffms2) {
++#if HAVE_FFMS2
++            return_error = preload_frames_ffms2(app_cfg);
++#endif
++        } else {
++            return_error = preload_frames_info_ram(app_cfg);
++        }
+     } else
+         app_cfg->sequence_buffer = 0;
+     ///********************** APPLICATION INIT [END] ******************////////
+@@ -465,6 +712,19 @@ EbErrorType de_init_encoder(EbConfig *app_cfg, uint32_t instance_index) {
+     EbErrorType return_error = EB_ErrorNone;
+     (void)instance_index;
+ 
++#if HAVE_FFMS2
++    if (app_cfg->use_ffms2) {
++        if (app_cfg->ffms_video_source) {
++            FFMS_DestroyVideoSource((FFMS_VideoSource *)app_cfg->ffms_video_source);
++            app_cfg->ffms_video_source = NULL;
++        }
++        if (app_cfg->ffms_index) {
++            FFMS_DestroyIndex((FFMS_Index *)app_cfg->ffms_index);
++            app_cfg->ffms_index = NULL;
++        }
++    }
++#endif
++
+     deallocate_buffers(app_cfg);
+ 
+     // Destruct the component
+diff --git a/Source/App/app_main.c b/Source/App/app_main.c
+index 2df7a696..5f8020b9 100644
+--- a/Source/App/app_main.c
++++ b/Source/App/app_main.c
+@@ -98,6 +98,7 @@ typedef struct EncContext {
+     int32_t    total_frames;
+ } EncContext;
+ 
++#if !HAVE_FFMS2
+ //initilize memory mapped file handler
+ static void init_memory_file_map(EbConfig* app_cfg) {
+     if (app_cfg->mmap.allow) {
+@@ -145,6 +146,7 @@ static void deinit_memory_file_map(EbConfig* app_cfg) {
+     CloseHandle(app_cfg->mmap.map_handle);
+ #endif
+ }
++#endif
+ 
+ static int compar_uint64(const void* a, const void* b) {
+     const uint64_t x = *(const uint64_t*)a;
+@@ -226,7 +228,9 @@ static EbErrorType enc_context_ctor(EncApp* enc_app, EncContext* enc_context, in
+                       sizeof(forced_keyframes->frames[0]),
+                       compar_uint64);
+             }
++#if !HAVE_FFMS2
+             init_memory_file_map(app_cfg);
++#endif
+             init_reader(app_cfg);
+ 
+             app_svt_av1_get_time(&app_cfg->performance_context.lib_start_time[0],
+@@ -250,7 +254,9 @@ static void enc_context_dctor(EncContext* enc_context) {
+     // DeInit Encoder
+     for (int32_t inst_cnt = enc_context->num_channels - 1; inst_cnt >= 0; --inst_cnt) {
+         EncChannel* c = enc_context->channels + inst_cnt;
++#if !HAVE_FFMS2
+         deinit_memory_file_map(c->app_cfg);
++#endif
+         enc_channel_dctor(c, inst_cnt);
+     }
+ 
+diff --git a/Source/App/app_process_cmd.c b/Source/App/app_process_cmd.c
+index 107f21b1..c7738a50 100644
+--- a/Source/App/app_process_cmd.c
++++ b/Source/App/app_process_cmd.c
+@@ -34,6 +34,10 @@
+ 
+ #include "app_output_ivf.h"
+ 
++#if HAVE_FFMS2
++#include "third_party/ffms2/include/ffms.h"
++#endif
++
+ /***************************************
+  * Macros
+  ***************************************/
+@@ -232,6 +236,11 @@ static bool is_forced_keyframe(const EbConfig *app_cfg, uint64_t pts) {
+ 
+ bool process_skip(EbConfig *app_cfg, EbBufferHeaderType *header_ptr) {
+     const bool is_16bit = app_cfg->config.encoder_bit_depth > 8;
++    if (app_cfg->use_ffms2) {
++        // not implemented yet
++        app_cfg->need_to_skip = false;
++        return true;
++    }
+     for (int64_t i = 0; i < app_cfg->frames_to_be_skipped; i++) {
+         read_input(app_cfg, is_16bit, header_ptr);
+ 
+@@ -712,8 +721,113 @@ static void buffered_read_input_frames(EbConfig *app_cfg, uint8_t is_16bit, EbBu
+     header_ptr->n_filled_len = (uint32_t)(luma_size + 2 * chroma_size);
+ }
+ 
++#if HAVE_FFMS2
++static void ffms2_read_input_frames(EbConfig *app_cfg, uint8_t is_16bit, EbBufferHeaderType *header_ptr) {
++    (void)is_16bit; // We always output 10-bit from FFMS2
++
++    FFMS_VideoSource *video_source = (FFMS_VideoSource *)app_cfg->ffms_video_source;
++    EbSvtIOFormat *input_ptr = (EbSvtIOFormat *)header_ptr->p_buffer;
++
++    int frame_num = app_cfg->processed_frame_count;
++
++    const FFMS_VideoProperties *props = FFMS_GetVideoProperties(video_source);
++
++    // Check if we've reached the end
++    if (frame_num >= props->NumFrames) {
++        header_ptr->n_filled_len = 0;
++        return;
++    }
++
++    // Get frame from FFMS2
++    FFMS_ErrorInfo err_info;
++    char errmsg[1024];
++    err_info.Buffer = errmsg;
++    err_info.BufferSize = sizeof(errmsg);
++    err_info.ErrorType = FFMS_ERROR_SUCCESS;
++    err_info.SubType = FFMS_ERROR_SUCCESS;
++
++    const FFMS_Frame *frame = FFMS_GetFrame(video_source, frame_num, &err_info);
++    if (!frame) {
++        fprintf(stderr, "FFMS2 Error getting frame %d: %s\n", frame_num, errmsg);
++        header_ptr->n_filled_len = 0;
++        return;
++    }
++
++    const uint32_t width = app_cfg->input_padded_width;
++    const uint32_t height = app_cfg->input_padded_height;
++    const uint32_t chroma_width = width >> 1;
++    const uint32_t chroma_height = height >> 1;
++
++    // Copy frame data (10-bit = 2 bytes per sample)
++    const size_t luma_size = width * height * 2;
++    const size_t chroma_size = chroma_width * chroma_height * 2;
++
++    uint8_t *dst_y = input_ptr->luma;
++    uint8_t *dst_u = input_ptr->cb;
++    uint8_t *dst_v = input_ptr->cr;
++    const uint8_t *src_y = frame->Data[0];
++    const uint8_t *src_u = frame->Data[1];
++    const uint8_t *src_v = frame->Data[2];
++
++    for (uint32_t y = 0; y < height; y++) {
++        memcpy(dst_y, src_y, width * 2);
++        dst_y += width * 2;
++        src_y += frame->Linesize[0];
++    }
++
++    for (uint32_t y = 0; y < chroma_height; y++) {
++        memcpy(dst_u, src_u, chroma_width * 2);
++        memcpy(dst_v, src_v, chroma_width * 2);
++        dst_u += chroma_width * 2;
++        dst_v += chroma_width * 2;
++        src_u += frame->Linesize[1];
++        src_v += frame->Linesize[2];
++    }
++
++    input_ptr->y_stride = width;
++    input_ptr->cb_stride = chroma_width;
++    input_ptr->cr_stride = chroma_width;
++
++    header_ptr->n_filled_len = luma_size + 2 * chroma_size;
++}
++
++static void ffms2_buffered_read_input_frames(EbConfig *app_cfg, uint8_t is_16bit, EbBufferHeaderType *header_ptr) {
++    (void)is_16bit;
++
++    EbSvtIOFormat *input_ptr = (EbSvtIOFormat *)header_ptr->p_buffer;
++
++    const uint32_t width = app_cfg->input_padded_width;
++    const uint32_t height = app_cfg->input_padded_height;
++    const uint32_t chroma_width = width >> 1;
++    const uint32_t chroma_height = height >> 1;
++
++    // 10-bit = 2 bytes per sample
++    const size_t luma_size = width * height * 2;
++    const size_t chroma_size = chroma_width * chroma_height * 2;
++
++    uint8_t *base = app_cfg->sequence_buffer[app_cfg->processed_frame_count % app_cfg->buffered_input];
++    input_ptr->luma = base;
++    input_ptr->cb = base + luma_size;
++    input_ptr->cr = base + luma_size + chroma_size;
++
++    input_ptr->y_stride = width;
++    input_ptr->cb_stride = chroma_width;
++    input_ptr->cr_stride = chroma_width;
++
++    header_ptr->n_filled_len = (uint32_t)(luma_size + 2 * chroma_size);
++}
++#endif
++
+ void init_reader(EbConfig *app_cfg) {
+-    if (app_cfg->buffered_input != -1) {
++    if (app_cfg->use_ffms2) {
++        if (app_cfg->buffered_input != -1) {
++#if HAVE_FFMS2
++            read_input = ffms2_buffered_read_input_frames;
++        } else {
++            read_input = ffms2_read_input_frames;
++#endif
++        }
++    } else if (app_cfg->buffered_input != -1) {
+         read_input = buffered_read_input_frames;
+     } else if (app_cfg->mmap.enable) {
+         read_input = mmap_read_input_frames;
+diff --git a/Source/Lib/Globals/enc_settings.c b/Source/Lib/Globals/enc_settings.c
+index 88934103..ca7a195e 100644
+--- a/Source/Lib/Globals/enc_settings.c
++++ b/Source/Lib/Globals/enc_settings.c
+@@ -1086,6 +1086,97 @@ static const char *level_to_str(unsigned in) {
+     return ret;
+ }
+ 
++static const char *color_primaries_to_str(EbColorPrimaries primaries) {
++    const struct {
++        const char      *name;
++        EbColorPrimaries primaries;
++    } color_primaries[] = {
++        {"bt709", EB_CICP_CP_BT_709},
++        {"bt470m", EB_CICP_CP_BT_470_M},
++        {"bt470bg", EB_CICP_CP_BT_470_B_G},
++        {"bt601", EB_CICP_CP_BT_601},
++        {"smpte240", EB_CICP_CP_SMPTE_240},
++        {"film", EB_CICP_CP_GENERIC_FILM},
++        {"bt2020", EB_CICP_CP_BT_2020},
++        {"xyz", EB_CICP_CP_XYZ},
++        {"smpte431", EB_CICP_CP_SMPTE_431},
++        {"smpte432", EB_CICP_CP_SMPTE_432},
++        {"ebu3213", EB_CICP_CP_EBU_3213},
++    };
++    const size_t color_primaries_size = sizeof(color_primaries) / sizeof(color_primaries[0]);
++
++    for (size_t i = 0; i < color_primaries_size; i++) {
++        if (primaries == color_primaries[i].primaries) {
++            return color_primaries[i].name;
++        }
++    }
++
++    return "unknown";
++}
++
++static const char *transfer_characteristics_to_str(EbTransferCharacteristics tfc) {
++    const struct {
++        const char               *name;
++        EbTransferCharacteristics tfc;
++    } transfer_characteristics[] = {
++        {"bt709", EB_CICP_TC_BT_709},
++        {"bt470m", EB_CICP_TC_BT_470_M},
++        {"bt470bg", EB_CICP_TC_BT_470_B_G},
++        {"bt601", EB_CICP_TC_BT_601},
++        {"smpte240", EB_CICP_TC_SMPTE_240},
++        {"linear", EB_CICP_TC_LINEAR},
++        {"log100", EB_CICP_TC_LOG_100},
++        {"log100-sqrt10", EB_CICP_TC_LOG_100_SQRT10},
++        {"iec61966", EB_CICP_TC_IEC_61966},
++        {"bt1361", EB_CICP_TC_BT_1361},
++        {"srgb", EB_CICP_TC_SRGB},
++        {"bt2020-10", EB_CICP_TC_BT_2020_10_BIT},
++        {"bt2020-12", EB_CICP_TC_BT_2020_12_BIT},
++        {"smpte2084", EB_CICP_TC_SMPTE_2084},
++        {"smpte428", EB_CICP_TC_SMPTE_428},
++        {"hlg", EB_CICP_TC_HLG},
++    };
++    const size_t transfer_characteristics_size = sizeof(transfer_characteristics) / sizeof(transfer_characteristics[0]);
++
++    for (size_t i = 0; i < transfer_characteristics_size; i++) {
++        if (tfc == transfer_characteristics[i].tfc) {
++            return transfer_characteristics[i].name;
++        }
++    }
++
++    return "unknown";
++}
++
++static const char *matrix_coefficients_to_str(EbMatrixCoefficients coeff) {
++    const struct {
++        const char          *name;
++        EbMatrixCoefficients coeff;
++    } matrix_coefficients[] = {
++        {"identity", EB_CICP_MC_IDENTITY},
++        {"bt709", EB_CICP_MC_BT_709},
++        {"fcc", EB_CICP_MC_FCC},
++        {"bt470bg", EB_CICP_MC_BT_470_B_G},
++        {"bt601", EB_CICP_MC_BT_601},
++        {"smpte240", EB_CICP_MC_SMPTE_240},
++        {"ycgco", EB_CICP_MC_SMPTE_YCGCO},
++        {"bt2020-ncl", EB_CICP_MC_BT_2020_NCL},
++        {"bt2020-cl", EB_CICP_MC_BT_2020_CL},
++        {"smpte2085", EB_CICP_MC_SMPTE_2085},
++        {"chroma-ncl", EB_CICP_MC_CHROMAT_NCL},
++        {"chroma-cl", EB_CICP_MC_CHROMAT_CL},
++        {"ictcp", EB_CICP_MC_ICTCP},
++    };
++    const size_t matrix_coefficients_size = sizeof(matrix_coefficients) / sizeof(matrix_coefficients[0]);
++
++    for (size_t i = 0; i < matrix_coefficients_size; i++) {
++        if (coeff == matrix_coefficients[i].coeff) {
++            return matrix_coefficients[i].name;
++        }
++    }
++
++    return "unknown";
++}
++
+ void svt_av1_print_lib_params(SequenceControlSet *scs) {
+     EbSvtAv1EncConfiguration *config = &scs->static_config;
+ 
+@@ -1108,14 +1199,21 @@ void svt_av1_print_lib_params(SequenceControlSet *scs) {
+             config->frame_rate_numerator,
+             config->frame_rate_denominator);
+         SVT_INFO(
+-            "SVT [config]: bit-depth / color format \t\t\t\t: %d / "
+-            "%s\n",
++            "SVT [config]: bit-depth / color format / hdr \t\t\t: %d / "
++            "%s / %d\n",
+             config->encoder_bit_depth,
+             config->encoder_color_format == EB_YUV400       ? "YUV400"
+                 : config->encoder_color_format == EB_YUV420 ? "YUV420"
+                 : config->encoder_color_format == EB_YUV422 ? "YUV422"
+                 : config->encoder_color_format == EB_YUV444 ? "YUV444"
+-                                                            : "Unknown color format");
++                                                            : "Unknown color format",
++            (config->content_light_level.max_cll != 0 || config->mastering_display.max_luma != 0)); // reintroduce enable-hdr param?
++
++        SVT_INFO(
++            "SVT [config]: color primaries / transfer characts / matrix coeffs \t: %s / %s / %s \n",
++            matrix_coefficients_to_str(config->matrix_coefficients),
++            color_primaries_to_str(config->color_primaries),
++            transfer_characteristics_to_str(config->transfer_characteristics));
+ 
+         if (scs->static_config.speed != SPEED_UNKNOWN || (scs->static_config.speed == SPEED_UNKNOWN &&
+             config->enc_mode == ENC_M5 &&
+diff --git a/third_party/ffms2/include/ffms.h b/third_party/ffms2/include/ffms.h
+new file mode 100644
+index 00000000..486fb868
+--- /dev/null
++++ b/third_party/ffms2/include/ffms.h
+@@ -0,0 +1,485 @@
++//  Copyright (c) 2007-2018 Fredrik Mellbin
++//
++//  Permission is hereby granted, free of charge, to any person obtaining a copy
++//  of this software and associated documentation files (the "Software"), to deal
++//  in the Software without restriction, including without limitation the rights
++//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++//  copies of the Software, and to permit persons to whom the Software is
++//  furnished to do so, subject to the following conditions:
++//
++//  The above copyright notice and this permission notice shall be included in
++//  all copies or substantial portions of the Software.
++//
++//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++//  THE SOFTWARE.
++
++#ifndef FFMS_H
++#define FFMS_H
++
++// Version format: major - minor - micro - bump
++#define FFMS_VERSION ((5 << 24) | (1 << 16) | (0 << 8) | 0)
++
++#include <stdint.h>
++#include <stddef.h>
++
++
++/********
++*	The following preprocessor voodoo ensures that all API symbols are exported
++*	as intended on all supported platforms, that non-API symbols are hidden (where possible),
++*	and that the correct calling convention and extern declarations are used.
++*	The end result should be that linking to FFMS2 Just Works.
++********/
++
++// Convenience for C++ users.
++#if defined(__cplusplus)
++#	define FFMS_EXTERN_C extern "C"
++#else
++#	define FFMS_EXTERN_C
++#endif
++
++// On win32, we need to ensure we use stdcall with all compilers.
++#if defined(_WIN32) && !defined(_WIN64)
++#	define FFMS_CC __stdcall
++#else
++#	define FFMS_CC
++#endif
++
++// compiler-specific deprecation attributes
++#ifndef FFMS_EXPORTS
++#	if defined(__GNUC__) && (__GNUC__ >= 4)
++#		define FFMS_DEPRECATED __attribute__((deprecated))
++#	elif defined(_MSC_VER)
++#		define FFMS_DEPRECATED __declspec(deprecated)
++#	endif
++#endif
++
++#ifndef FFMS_DEPRECATED
++// Define as empty if the compiler doesn't support deprecation attributes or
++// if we're building FFMS2 itself
++#	define FFMS_DEPRECATED
++#endif
++
++// And now for some symbol hide-and-seek...
++#if defined(_WIN32) && !defined(FFMS_STATIC) // MSVC
++#	if defined(FFMS_EXPORTS) // building the FFMS2 library itself, with visible API symbols
++#		define FFMS_API(ret) FFMS_EXTERN_C __declspec(dllexport) ret FFMS_CC
++#		define FFMS_DEPRECATED_API(ret) FFMS_EXTERN_C FFMS_DEPRECATED __declspec(dllexport) ret FFMS_CC
++#	else // building something that depends on FFMS2
++#		define FFMS_API(ret) FFMS_EXTERN_C __declspec(dllimport) ret FFMS_CC
++#		define FFMS_DEPRECATED_API(ret) FFMS_EXTERN_C FFMS_DEPRECATED __declspec(dllimport) ret FFMS_CC
++#	endif // defined(FFMS_EXPORTS)
++// GCC 4 or later: export API symbols only. Some GCC 3.x versions support the visibility attribute too,
++// but we don't really care enough about that to add compatibility defines for it.
++#elif defined(__GNUC__) && __GNUC__ >= 4
++#	define FFMS_API(ret) FFMS_EXTERN_C __attribute__((visibility("default"))) ret FFMS_CC
++#	define FFMS_DEPRECATED_API(ret) FFMS_EXTERN_C FFMS_DEPRECATED __attribute__((visibility("default"))) ret FFMS_CC
++#else // fallback for everything else
++#	define FFMS_API(ret) FFMS_EXTERN_C ret FFMS_CC
++#	define FFMS_DEPRECATED_API(ret) FFMS_EXTERN_C FFMS_DEPRECATED ret FFMS_CC
++#endif // defined(_MSC_VER)
++
++
++// we now return you to your regularly scheduled programming.
++
++typedef struct FFMS_ErrorInfo {
++    int ErrorType;
++    int SubType;
++    int BufferSize;
++    char *Buffer;
++} FFMS_ErrorInfo;
++
++typedef struct FFMS_VideoSource FFMS_VideoSource;
++typedef struct FFMS_AudioSource FFMS_AudioSource;
++typedef struct FFMS_Indexer FFMS_Indexer;
++typedef struct FFMS_Index FFMS_Index;
++typedef struct FFMS_Track FFMS_Track;
++
++typedef enum FFMS_Errors {
++    // No error
++    FFMS_ERROR_SUCCESS = 0,
++
++    // Main types - where the error occurred
++    FFMS_ERROR_INDEX = 1,			// index file handling
++    FFMS_ERROR_INDEXING,			// indexing
++    FFMS_ERROR_POSTPROCESSING,		// video postprocessing (libpostproc)
++    FFMS_ERROR_SCALING,				// image scaling (libswscale)
++    FFMS_ERROR_DECODING,			// audio/video decoding
++    FFMS_ERROR_SEEKING,				// seeking
++    FFMS_ERROR_PARSER,				// file parsing
++    FFMS_ERROR_TRACK,				// track handling
++    FFMS_ERROR_WAVE_WRITER,			// WAVE64 file writer
++    FFMS_ERROR_CANCELLED,			// operation aborted
++    FFMS_ERROR_RESAMPLING,			// audio resampling (libavresample)
++
++    // Subtypes - what caused the error
++    FFMS_ERROR_UNKNOWN = 20,		// unknown error
++    FFMS_ERROR_UNSUPPORTED,			// format or operation is not supported with this binary
++    FFMS_ERROR_FILE_READ,			// cannot read from file
++    FFMS_ERROR_FILE_WRITE,			// cannot write to file
++    FFMS_ERROR_NO_FILE,				// no such file or directory
++    FFMS_ERROR_VERSION,				// wrong version
++    FFMS_ERROR_ALLOCATION_FAILED,	// out of memory
++    FFMS_ERROR_INVALID_ARGUMENT,	// invalid or nonsensical argument
++    FFMS_ERROR_CODEC,				// decoder error
++    FFMS_ERROR_NOT_AVAILABLE,		// requested mode or operation unavailable in this binary
++    FFMS_ERROR_FILE_MISMATCH,		// provided index does not match the file
++    FFMS_ERROR_USER					// problem exists between keyboard and chair
++} FFMS_Errors;
++
++typedef enum FFMS_SeekMode {
++    FFMS_SEEK_LINEAR_NO_RW = -1,
++    FFMS_SEEK_LINEAR = 0,
++    FFMS_SEEK_NORMAL = 1,
++    FFMS_SEEK_UNSAFE = 2,
++    FFMS_SEEK_AGGRESSIVE = 3
++} FFMS_SeekMode;
++
++typedef enum FFMS_IndexErrorHandling {
++    FFMS_IEH_ABORT = 0,
++    FFMS_IEH_CLEAR_TRACK = 1,
++    FFMS_IEH_STOP_TRACK = 2,
++    FFMS_IEH_IGNORE = 3
++} FFMS_IndexErrorHandling;
++
++typedef enum FFMS_TrackType {
++    FFMS_TYPE_UNKNOWN = -1,
++    FFMS_TYPE_VIDEO,
++    FFMS_TYPE_AUDIO,
++    FFMS_TYPE_DATA,
++    FFMS_TYPE_SUBTITLE,
++    FFMS_TYPE_ATTACHMENT
++} FFMS_TrackType;
++
++typedef enum FFMS_SampleFormat {
++    FFMS_FMT_U8 = 0,
++    FFMS_FMT_S16,
++    FFMS_FMT_S32,
++    FFMS_FMT_FLT,
++    FFMS_FMT_DBL
++} FFMS_SampleFormat;
++
++typedef enum FFMS_AudioChannel {
++    FFMS_CH_FRONT_LEFT = 0x00000001,
++    FFMS_CH_FRONT_RIGHT = 0x00000002,
++    FFMS_CH_FRONT_CENTER = 0x00000004,
++    FFMS_CH_LOW_FREQUENCY = 0x00000008,
++    FFMS_CH_BACK_LEFT = 0x00000010,
++    FFMS_CH_BACK_RIGHT = 0x00000020,
++    FFMS_CH_FRONT_LEFT_OF_CENTER = 0x00000040,
++    FFMS_CH_FRONT_RIGHT_OF_CENTER = 0x00000080,
++    FFMS_CH_BACK_CENTER = 0x00000100,
++    FFMS_CH_SIDE_LEFT = 0x00000200,
++    FFMS_CH_SIDE_RIGHT = 0x00000400,
++    FFMS_CH_TOP_CENTER = 0x00000800,
++    FFMS_CH_TOP_FRONT_LEFT = 0x00001000,
++    FFMS_CH_TOP_FRONT_CENTER = 0x00002000,
++    FFMS_CH_TOP_FRONT_RIGHT = 0x00004000,
++    FFMS_CH_TOP_BACK_LEFT = 0x00008000,
++    FFMS_CH_TOP_BACK_CENTER = 0x00010000,
++    FFMS_CH_TOP_BACK_RIGHT = 0x00020000,
++    FFMS_CH_STEREO_LEFT = 0x20000000,
++    FFMS_CH_STEREO_RIGHT = 0x40000000
++} FFMS_AudioChannel;
++
++typedef enum FFMS_Resizers {
++    FFMS_RESIZER_FAST_BILINEAR = 0x0001,
++    FFMS_RESIZER_BILINEAR = 0x0002,
++    FFMS_RESIZER_BICUBIC = 0x0004,
++    FFMS_RESIZER_X = 0x0008,
++    FFMS_RESIZER_POINT = 0x0010,
++    FFMS_RESIZER_AREA = 0x0020,
++    FFMS_RESIZER_BICUBLIN = 0x0040,
++    FFMS_RESIZER_GAUSS = 0x0080,
++    FFMS_RESIZER_SINC = 0x0100,
++    FFMS_RESIZER_LANCZOS = 0x0200,
++    FFMS_RESIZER_SPLINE = 0x0400
++} FFMS_Resizers;
++
++typedef enum FFMS_AudioDelayModes {
++    FFMS_DELAY_NO_SHIFT = -3,
++    FFMS_DELAY_TIME_ZERO = -2,
++    FFMS_DELAY_FIRST_VIDEO_TRACK = -1
++} FFMS_AudioDelayModes;
++
++typedef enum FFMS_AudioGapFillModes {
++    FFMS_GAP_FILL_AUTO = -1,
++    FFMS_GAP_FILL_DISABLED = 0,
++    FFMS_GAP_FILL_ENABLED = -1
++} FFMS_AudioGapFillModes;
++
++typedef enum FFMS_ChromaLocations {
++    FFMS_LOC_UNSPECIFIED = 0,
++    FFMS_LOC_LEFT = 1,
++    FFMS_LOC_CENTER = 2,
++    FFMS_LOC_TOPLEFT = 3,
++    FFMS_LOC_TOP = 4,
++    FFMS_LOC_BOTTOMLEFT = 5,
++    FFMS_LOC_BOTTOM = 6
++} FFMS_ChromaLocations;
++
++typedef enum FFMS_ColorRanges {
++    FFMS_CR_UNSPECIFIED = 0,
++    FFMS_CR_MPEG = 1, // 219*2^(n-8), i.e. 16-235 with 8-bit samples
++    FFMS_CR_JPEG = 2 // 2^n-1, or "fullrange"
++} FFMS_ColorRanges;
++
++typedef enum FFMS_Stereo3DType {
++    FFMS_S3D_TYPE_2D = 0,
++    FFMS_S3D_TYPE_SIDEBYSIDE,
++    FFMS_S3D_TYPE_TOPBOTTOM,
++    FFMS_S3D_TYPE_FRAMESEQUENCE,
++    FFMS_S3D_TYPE_CHECKERBOARD,
++    FFMS_S3D_TYPE_SIDEBYSIDE_QUINCUNX,
++    FFMS_S3D_TYPE_LINES,
++    FFMS_S3D_TYPE_COLUMNS
++} FFMS_Stereo3DType;
++
++typedef enum FFMS_Stereo3DFlags {
++    FFMS_S3D_FLAGS_INVERT = 1
++} FFMS_Stereo3DFlags;
++
++typedef enum FFMS_MixingCoefficientType {
++    FFMS_MIXING_COEFFICIENT_Q8 = 0,
++    FFMS_MIXING_COEFFICIENT_Q15 = 1,
++    FFMS_MIXING_COEFFICIENT_FLT = 2
++} FFMS_MixingCoefficientType;
++
++typedef enum FFMS_MatrixEncoding {
++    FFMS_MATRIX_ENCODING_NONE = 0,
++    FFMS_MATRIX_ENCODING_DOBLY = 1,
++    FFMS_MATRIX_ENCODING_PRO_LOGIC_II = 2,
++    FFMS_MATRIX_ENCODING_PRO_LOGIC_IIX = 3,
++    FFMS_MATRIX_ENCODING_PRO_LOGIC_IIZ = 4,
++    FFMS_MATRIX_ENCODING_DOLBY_EX = 5,
++    FFMS_MATRIX_ENCODING_DOLBY_HEADPHONE = 6
++} FFMS_MatrixEncoding;
++
++typedef enum FFMS_ResampleFilterType {
++    FFMS_RESAMPLE_FILTER_CUBIC = 0,
++    FFMS_RESAMPLE_FILTER_SINC = 1, /* misnamed as multiple windowsed sinc filters exist, actually called BLACKMAN_NUTTALL */
++    FFMS_RESAMPLE_FILTER_KAISER = 2
++} FFMS_ResampleFilterType;
++
++typedef enum FFMS_AudioDitherMethod {
++    FFMS_RESAMPLE_DITHER_NONE = 0,
++    FFMS_RESAMPLE_DITHER_RECTANGULAR = 1,
++    FFMS_RESAMPLE_DITHER_TRIANGULAR = 2,
++    FFMS_RESAMPLE_DITHER_TRIANGULAR_HIGHPASS = 3,
++    FFMS_RESAMPLE_DITHER_TRIANGULAR_NOISESHAPING = 4
++} FFMS_AudioDitherMethod;
++
++typedef enum FFMS_LogLevels {
++    FFMS_LOG_QUIET = -8,
++    FFMS_LOG_PANIC = 0,
++    FFMS_LOG_FATAL = 8,
++    FFMS_LOG_ERROR = 16,
++    FFMS_LOG_WARNING = 24,
++    FFMS_LOG_INFO = 32,
++    FFMS_LOG_VERBOSE = 40,
++    FFMS_LOG_DEBUG = 48,
++    FFMS_LOG_TRACE = 56
++} FFMS_LogLevels;
++
++typedef struct FFMS_ResampleOptions {
++    int64_t ChannelLayout;
++    FFMS_SampleFormat SampleFormat;
++    int SampleRate;
++    FFMS_MixingCoefficientType MixingCoefficientType;
++    double CenterMixLevel;
++    double SurroundMixLevel;
++    double LFEMixLevel;
++    int Normalize;
++    int ForceResample;
++    int ResampleFilterSize;
++    int ResamplePhaseShift;
++    int LinearInterpolation;
++    double CutoffFrequencyRatio;
++    FFMS_MatrixEncoding MatrixedStereoEncoding;
++    FFMS_ResampleFilterType FilterType;
++    int KaiserBeta;
++    FFMS_AudioDitherMethod DitherMethod;
++} FFMS_ResampleOptions;
++
++
++typedef struct FFMS_Frame {
++    const uint8_t *Data[4];
++    int Linesize[4];
++    int EncodedWidth;
++    int EncodedHeight;
++    int EncodedPixelFormat;
++    int ScaledWidth;
++    int ScaledHeight;
++    int ConvertedPixelFormat;
++    int KeyFrame;
++    int RepeatPict;
++    int InterlacedFrame;
++    int TopFieldFirst;
++    char PictType;
++    int ColorSpace;
++    int ColorRange;
++    /* Introduced in FFMS_VERSION ((2 << 24) | (21 << 16) | (0 << 8) | 0) */
++    int ColorPrimaries;
++    int TransferCharateristics;
++    int ChromaLocation;
++    /* Introduced in FFMS_VERSION ((2 << 24) | (27 << 16) | (0 << 8) | 0) */
++    int HasMasteringDisplayPrimaries;  /* Non-zero if the 4 fields below are valid */
++    double MasteringDisplayPrimariesX[3];
++    double MasteringDisplayPrimariesY[3];
++    double MasteringDisplayWhitePointX;
++    double MasteringDisplayWhitePointY;
++    int HasMasteringDisplayLuminance; /* Non-zero if the 2 fields below are valid */
++    double MasteringDisplayMinLuminance;
++    double MasteringDisplayMaxLuminance;
++    int HasContentLightLevel; /* Non-zero if the 2 fields below are valid */
++    unsigned int ContentLightLevelMax;
++    unsigned int ContentLightLevelAverage;
++    /* Introduced in FFMS_VERSION ((3 << 24) | (0 << 16) | (1 << 8) | 0) */
++    uint8_t *DolbyVisionRPU;
++    int DolbyVisionRPUSize;
++    /* Introduced in FFMS_VERSION ((3 << 24) | (1 << 16) | (1 << 8) | 0) */
++    uint8_t *HDR10Plus;
++    int HDR10PlusSize;
++
++    /*
++     * If these buffers are not NULL, left and right eye data is present.
++     * In such a case, the main buffer points to the primary eye's buffer,
++     * for use in monoscopic encoding.
++     *
++     * Introduced in FFMS_VERSION ((5 << 24) | (1 << 16) | (0 << 8) | 0)
++     */
++    const uint8_t *LeftEyeData[4];
++    int LeftEyeLinesize[4];
++    const uint8_t *RightEyeData[4];
++    int RightEyeLinesize[4];
++} FFMS_Frame;
++
++typedef struct FFMS_TrackTimeBase {
++    int64_t Num;
++    int64_t Den;
++} FFMS_TrackTimeBase;
++
++typedef struct FFMS_FrameInfo {
++    int64_t PTS;
++    int RepeatPict;
++    int KeyFrame;
++    int64_t OriginalPTS;
++} FFMS_FrameInfo;
++
++typedef struct FFMS_VideoProperties {
++    int FPSDenominator;
++    int FPSNumerator;
++    int RFFDenominator;
++    int RFFNumerator;
++    int NumFrames;
++    int SARNum;
++    int SARDen;
++    int CropTop;
++    int CropBottom;
++    int CropLeft;
++    int CropRight;
++    int TopFieldFirst;
++    FFMS_DEPRECATED int ColorSpace; /* Provided in FFMS_Frame */
++    FFMS_DEPRECATED int ColorRange; /* Provided in FFMS_Frame */
++    double FirstTime;
++    double LastTime;
++    /* Introduced in FFMS_VERSION ((2 << 24) | (24 << 16) | (0 << 8) | 0) */
++    int Rotation; /* A positive number in degrees */
++    int Stereo3DType;
++    int Stereo3DFlags;
++    /* Introduced in FFMS_VERSION ((2 << 24) | (30 << 16) | (0 << 8) | 0) */
++    double LastEndTime;
++    int HasMasteringDisplayPrimaries;  /* Non-zero if the 4 fields below are valid */
++    double MasteringDisplayPrimariesX[3];
++    double MasteringDisplayPrimariesY[3];
++    double MasteringDisplayWhitePointX;
++    double MasteringDisplayWhitePointY;
++    int HasMasteringDisplayLuminance; /* Non-zero if the 2 fields below are valid */
++    double MasteringDisplayMinLuminance;
++    double MasteringDisplayMaxLuminance;
++    int HasContentLightLevel; /* Non-zero if the 2 fields below are valid */
++    unsigned int ContentLightLevelMax;
++    unsigned int ContentLightLevelAverage;
++    /* Introduced in FFMS_VERSION ((2 << 24) | (31 << 16) | (0 << 8) | 0) */
++    int Flip; /* -1 = Vertical flip, 1 = Horizontal flip */
++} FFMS_VideoProperties;
++
++typedef struct FFMS_AudioProperties {
++    int SampleFormat;
++    int SampleRate;
++    int BitsPerSample;
++    int Channels;
++    int64_t ChannelLayout; // should probably be a plain int, none of the constants are >32 bits long
++    int64_t NumSamples;
++    double FirstTime;
++    double LastTime;
++    /* Introduced in FFMS_VERSION ((2 << 24) | (30 << 16) | (0 << 8) | 0) */
++    double LastEndTime;
++} FFMS_AudioProperties;
++
++typedef struct FFMS_KeyValuePair {
++    const char *Key;
++    const char *Value;
++} FFMS_KeyValuePair;
++
++typedef int (FFMS_CC *TIndexCallback)(int64_t Current, int64_t Total, void *ICPrivate);
++
++/* Most functions return 0 on success */
++/* Functions without error message output can be assumed to never fail in a graceful way */
++FFMS_API(void) FFMS_Init(int, int); /* Pass 0 to both arguments, kept to partially preserve abi */
++FFMS_API(int) FFMS_GetVersion();
++FFMS_API(int) FFMS_GetLogLevel();
++FFMS_API(void) FFMS_SetLogLevel(int Level);
++FFMS_API(FFMS_VideoSource *) FFMS_CreateVideoSource(const char *SourceFile, int Track, FFMS_Index *Index, int Threads, int SeekMode, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(FFMS_AudioSource *) FFMS_CreateAudioSource(const char *SourceFile, int Track, FFMS_Index *Index, int DelayMode, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(FFMS_AudioSource *) FFMS_CreateAudioSource2(const char *SourceFile, int Track, FFMS_Index *Index, int DelayMode, int FillGaps, double DrcScale, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(void) FFMS_DestroyVideoSource(FFMS_VideoSource *V);
++FFMS_API(void) FFMS_DestroyAudioSource(FFMS_AudioSource *A);
++FFMS_API(const FFMS_VideoProperties *) FFMS_GetVideoProperties(FFMS_VideoSource *V);
++FFMS_API(const FFMS_AudioProperties *) FFMS_GetAudioProperties(FFMS_AudioSource *A);
++FFMS_API(const FFMS_Frame *) FFMS_GetFrame(FFMS_VideoSource *V, int n, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(const FFMS_Frame *) FFMS_GetFrameByTime(FFMS_VideoSource *V, double Time, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(int) FFMS_GetAudio(FFMS_AudioSource *A, void *Buf, int64_t Start, int64_t Count, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(int) FFMS_SetOutputFormatV2(FFMS_VideoSource *V, const int *TargetFormats, int Width, int Height, int Resizer, FFMS_ErrorInfo *ErrorInfo); /* Introduced in FFMS_VERSION ((2 << 24) | (15 << 16) | (3 << 8) | 0) */
++FFMS_API(void) FFMS_ResetOutputFormatV(FFMS_VideoSource *V);
++FFMS_API(int) FFMS_SetInputFormatV(FFMS_VideoSource *V, int ColorSpace, int ColorRange, int Format, FFMS_ErrorInfo *ErrorInfo); /* Introduced in FFMS_VERSION ((2 << 24) | (17 << 16) | (1 << 8) | 0) */
++FFMS_API(void) FFMS_ResetInputFormatV(FFMS_VideoSource *V);
++FFMS_API(FFMS_ResampleOptions *) FFMS_CreateResampleOptions(FFMS_AudioSource *A); /* Introduced in FFMS_VERSION ((2 << 24) | (15 << 16) | (4 << 8) | 0) */
++FFMS_API(int) FFMS_SetOutputFormatA(FFMS_AudioSource *A, const FFMS_ResampleOptions*options, FFMS_ErrorInfo *ErrorInfo); /* Introduced in FFMS_VERSION ((2 << 24) | (15 << 16) | (4 << 8) | 0) */
++FFMS_API(void) FFMS_DestroyResampleOptions(FFMS_ResampleOptions *options); /* Introduced in FFMS_VERSION ((2 << 24) | (15 << 16) | (4 << 8) | 0) */
++FFMS_API(void) FFMS_DestroyIndex(FFMS_Index *Index);
++FFMS_API(int) FFMS_GetFirstTrackOfType(FFMS_Index *Index, int TrackType, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(int) FFMS_GetFirstIndexedTrackOfType(FFMS_Index *Index, int TrackType, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(int) FFMS_GetNumTracks(FFMS_Index *Index);
++FFMS_API(int) FFMS_GetNumTracksI(FFMS_Indexer *Indexer);
++FFMS_API(int) FFMS_GetTrackType(FFMS_Track *T);
++FFMS_API(int) FFMS_GetTrackTypeI(FFMS_Indexer *Indexer, int Track);
++FFMS_API(FFMS_IndexErrorHandling) FFMS_GetErrorHandling(FFMS_Index *Index);
++FFMS_API(const char *) FFMS_GetCodecNameI(FFMS_Indexer *Indexer, int Track);
++FFMS_API(const char *) FFMS_GetFormatNameI(FFMS_Indexer *Indexer);
++FFMS_API(int) FFMS_GetNumFrames(FFMS_Track *T);
++FFMS_API(const FFMS_FrameInfo *) FFMS_GetFrameInfo(FFMS_Track *T, int Frame);
++FFMS_API(FFMS_Track *) FFMS_GetTrackFromIndex(FFMS_Index *Index, int Track);
++FFMS_API(FFMS_Track *) FFMS_GetTrackFromVideo(FFMS_VideoSource *V);
++FFMS_API(FFMS_Track *) FFMS_GetTrackFromAudio(FFMS_AudioSource *A);
++FFMS_API(const FFMS_TrackTimeBase *) FFMS_GetTimeBase(FFMS_Track *T);
++FFMS_API(int) FFMS_WriteTimecodes(FFMS_Track *T, const char *TimecodeFile, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(FFMS_Indexer *) FFMS_CreateIndexer(const char *SourceFile, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(FFMS_Indexer *) FFMS_CreateIndexer2(const char *SourceFile, const FFMS_KeyValuePair *DemuxerOptions, int NumOptions, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(void) FFMS_TrackIndexSettings(FFMS_Indexer *Indexer, int Track, int Index, int); /* Pass 0 to last argument, kapt to preserve abi. Introduced in FFMS_VERSION ((2 << 24) | (21 << 16) | (0 << 8) | 0) */
++FFMS_API(void) FFMS_TrackTypeIndexSettings(FFMS_Indexer *Indexer, int TrackType, int Index, int); /* Pass 0 to last argument, kapt to preserve abi. Introduced in FFMS_VERSION ((2 << 24) | (21 << 16) | (0 << 8) | 0) */
++FFMS_API(void) FFMS_SetProgressCallback(FFMS_Indexer *Indexer, TIndexCallback IC, void *ICPrivate); /* Introduced in FFMS_VERSION ((2 << 24) | (21 << 16) | (0 << 8) | 0) */
++FFMS_API(FFMS_Index *) FFMS_DoIndexing2(FFMS_Indexer *Indexer, int ErrorHandling, FFMS_ErrorInfo *ErrorInfo); /* Introduced in FFMS_VERSION ((2 << 24) | (21 << 16) | (0 << 8) | 0) */
++FFMS_API(void) FFMS_CancelIndexing(FFMS_Indexer *Indexer);
++FFMS_API(FFMS_Index *) FFMS_ReadIndex(const char *IndexFile, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(FFMS_Index *) FFMS_ReadIndexFromBuffer(const uint8_t *Buffer, size_t Size, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(int) FFMS_IndexBelongsToFile(FFMS_Index *Index, const char *SourceFile, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(int) FFMS_WriteIndex(const char *IndexFile, FFMS_Index *Index, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(int) FFMS_WriteIndexToBuffer(uint8_t **BufferPtr, size_t *Size, FFMS_Index *Index, FFMS_ErrorInfo *ErrorInfo);
++FFMS_API(void) FFMS_FreeIndexBuffer(uint8_t **BufferPtr);
++FFMS_API(int) FFMS_GetPixFmt(const char *Name);
++#endif

@@ -1,0 +1,115 @@
+#! /bin/sh
+
+### Package: mix-install-task-vapoursynth
+### Version: v0.20260120.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+## BUILDDEFAULT
+if [ -z "$BUILDDEFAULT" ]; then
+ BUILDDEFAULT="ON"
+fi
+
+## BUILDEXTRA
+if [ -z "$BUILDEXTRA" ]; then
+ BUILDEXTRA="OFF"
+fi
+
+## INSTALL
+if [ "$BUILDDEFAULT" = "ON" ]; then
+mix-install-ffms2
+mix-install-fmtconv
+mix-install-vapoursynth
+mix-install-vapoursynth-akarin
+mix-install-vapoursynth-bestsource
+mix-install-vapoursynth-bifrost
+mix-install-vapoursynth-dfttest
+mix-install-vapoursynth-dmetrics
+mix-install-vapoursynth-editor
+mix-install-vapoursynth-engine
+mix-install-vapoursynth-fft3dfilter
+mix-install-vapoursynth-hip
+mix-install-vapoursynth-jetpack
+mix-install-vapoursynth-jetpytools
+# lsmashsource depends on obuparse and lsmash
+mix-install-obuparse
+mix-install-lsmash
+mix-install-vapoursynth-lsmashsource
+mix-install-vapoursynth-nnedi3
+mix-install-vapoursynth-preview
+mix-install-vapoursynth-scxvid
+mix-install-vapoursynth-subtext
+mix-install-vapoursynth-temporalsoften2
+mix-install-vapoursynth-vivtc
+mix-install-vapoursynth-wobbly
+mix-install-vapoursynth-zip
+mix-install-vapoursynth-znedi3
+fi
+
+## BUILDEXTRA
+if [ "$BUILDEXTRA" = "ON" ]; then
+## INSTALL
+ mix-install-vapoursynth-adaptivegrain
+ mix-install-vapoursynth-addgrain
+ mix-install-vapoursynth-addnoise
+ mix-install-vapoursynth-autocrop
+ mix-install-vapoursynth-awarpsharp2
+ mix-install-vapoursynth-awsmfunc
+ mix-install-vapoursynth-benchmark
+ mix-install-vapoursynth-bm3d
+ mix-install-vapoursynth-bore
+ mix-install-vapoursynth-bwdif
+ mix-install-vapoursynth-cas
+ mix-install-vapoursynth-d2vsource
+ mix-install-vapoursynth-dctfilter
+ mix-install-vapoursynth-deblock
+ mix-install-vapoursynth-descale
+ mix-install-vapoursynth-dpid
+ mix-install-vapoursynth-dvdsrc2
+ mix-install-vapoursynth-edgemasks
+ mix-install-vapoursynth-eedi2
+ mix-install-vapoursynth-eedi3
+ mix-install-vapoursynth-fieldhint
+ mix-install-vapoursynth-fillborders
+ mix-install-vapoursynth-fluxsmooth
+ mix-install-vapoursynth-havsfunc
+ mix-install-vapoursynth-hqdn3d
+ mix-install-vapoursynth-hysteresis
+ mix-install-vapoursynth-knlmeans
+ mix-install-vapoursynth-libp2p
+ # lsmashsource depends on obuparse and lsmash
+ mix-install-obuparse
+ mix-install-vapoursynth-miscfilters
+ mix-install-vapoursynth-mvtools
+ mix-install-vapoursynth-neo_f3kdb
+ mix-install-vapoursynth-placebo
+ mix-install-vapoursynth-rekt
+ mix-install-vapoursynth-remapframes
+ mix-install-vapoursynth-removegrain
+ mix-install-vapoursynth-resize2
+ mix-install-vapoursynth-sangnom
+ mix-install-vapoursynth-tcanny
+ mix-install-vapoursynth-tcomb
+ mix-install-vapoursynth-tdeintmod
+ mix-install-vapoursynth-tedgemask
+ mix-install-vapoursynth-tivtc
+ mix-install-vapoursynth-ttempsmooth
+ mix-install-vapoursynth-util
+fi
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY
+

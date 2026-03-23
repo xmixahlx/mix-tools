@@ -1,0 +1,11 @@
+--- CMakeLists.txt.orig	2026-01-06 19:17:09.649583530 -0800
++++ CMakeLists.txt	2026-01-06 19:17:38.149654749 -0800
+@@ -14,7 +14,7 @@
+ # Look for include files and libraries outside of baseline /usr, but respecting install prefix first
+ # This is needed on FreeBSD where non-system packages are in /usr/local
+ include_directories(AFTER "${CMAKE_INSTALL_PREFIX}/include")
+-link_directories(AFTER "${CMAKE_INSTALL_PREFIX}/lib")
++link_directories(AFTER "${CMAKE_INSTALL_PREFIX}/lib" "${CMAKE_INSTALL_PREFIX}/lib/x86_64-linux-gnu")
+ 
+ # Get fancy variables
+ include(GNUInstallDirs)

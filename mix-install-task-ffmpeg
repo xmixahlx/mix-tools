@@ -1,40 +1,46 @@
 #! /bin/sh
 
 ### Package: mix-install-task-ffmpeg
-### Version: v20240728.2300
+### Version: v0.20260102.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
- export MIXTOOLSDIR=~/Development/XMIXAHLX/mix-tools
- export PATH=$MIXTOOLSDIR:$PATH
+### OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# SVTAV1VER
-# override with anything else to select official
-if [ -z $SVTAV1VER ]; then
- SVTAV1VER=PSY
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
 fi
-echo "*** SVTAV1VER selected is $SVTAV1VER."
+echo "*** DESTDIR selected is $DESTDIR."
+
+## SVTAV1FORK
+if [ -z "$SVTAV1FORK" ]; then
+ SVTAV1FORK="svt-av1-hdr"
+fi
+echo "*** SVTAV1FORK selected is $SVTAV1FORK."
 
 ## INSTALL
-mix-install-amf
-mix-install-dav1d
-mix-install-libdvbcsa
-mix-install-libdca
-mix-install-libmpeg2
-mix-install-libbdplus
-mix-install-libudfread
-#mix-install-liba52
+mix-install-checkasm
+mix-install-libdvdcss
 mix-install-libaacs
-mix-install-libbluray
 mix-install-libdvdnav
 mix-install-libdvdread
-mix-install-libdvdcss
+mix-install-amf
+mix-install-dav1d
+mix-install-libbluray
+mix-install-libdca
+mix-install-libbdplus
+mix-install-libdvbcsa
+mix-install-libmpeg2
+mix-install-libudfread
 mix-install-lensfun
 mix-install-vmaf
 mix-install-ogg
@@ -44,26 +50,34 @@ mix-install-opus
 mix-install-libopusenc
 mix-install-opusfile
 mix-install-opus-tools
+mix-install-liblc3
+mix-install-liblc3plus
 mix-install-quirc
 mix-install-speex
 mix-install-uavs3d
 mix-install-libaribcaption
 mix-install-libplacebo
 mix-install-zimg
+mix-install-libebml
+mix-install-libmatroska
 mix-install-svt-hevc
-# SVTAV1VER
-if [ $SVTAV1VER = PSY ];then
- mix-install-dovi
- mix-install-hdr10plus
- mix-install-svt-av1-psy
- else
- mix-install-svt-av1
-fi
+mix-install-svt-vp9
+mix-install-dovi
+mix-install-hdr10plus
+DESTDIR="$DESTDIR" mix-install-"$SVTAV1FORK"
+mix-install-svt-av1
+mix-install-svt-av1-psy
+mix-install-svt-av1-psyex
+mix-install-svt-av1-hdr
+mix-install-svt-av1-essential
+mix-install-svt-jpeg-xs
 mix-install-x264
 mix-install-x265
+mix-install-vapoursynth
 mix-install-ffmpeg
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

@@ -1,83 +1,100 @@
 #!/bin/sh
 
 ### Package: mix-install-rapidjson
-### Version: v20240617.2300
+### Version: v0.20260312.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLS
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
 fi
-echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
-echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
-# Upstream branch is "main".
-if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+## GITBRANCH
+# Upstream branch is "master".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
+## GITPR
+if [ -z "$GITPR" ]; then
+ GITPR="none"
+fi
+echo "*** GITPR selected is $GITPR."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
 ## VARS
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=$MIXTOOLSDIR/upstream
-GITURL=https://github.com
-GITREPO=tencent
-GITTREE=rapidjson
-GITPRURL=https://patch-diff.githubusercontent.com
-GITPRPATCH=$GITPRURL/raw/$GITREPO/$GITTREE/pull/$GITPR.patch
-PKGDIR=$GITTREE\_$GITBRANCH
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="tencent"
+GITTREE="rapidjson"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## INSTALLDEPS
-# Debian Dependencies
-if [ $INSTALLDEPS = debian ]; then
+# Debian
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y build-dep rapidjson-dev
  sudo apt-get -y install build-essential coreutils libc-bin git cmake
 fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
 
 ## CLEAN
-sudo rm -Rf $PKGDIR/tmpbuild
+sudo rm -Rf "$PKGDIR/tmpbuild"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
 git reset --hard
 git pull
-git submodule update --init --recursive --depth=1
+git submodule update --init
 
 ## GITPR
-if [ $GITPR ]; then
- rm -f $DEVDIR/$GITTREE\_$GITPR.patch
- wget $GITPRPATCH -O $DEVDIR/$GITTREE\_$GITPR.patch
- patch -p1 < $DEVDIR/$GITTREE\_$GITPR.patch
+if [ "$GITPR" != "none" ]; then
+ git pull origin pull/$GITPR/head --rebase
 fi
 
 ## CONFIGURE
-cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr/local -DRAPIDJSON_BUILD_TESTS=OFF -S . -B ./tmpbuild
+cmake -DCMAKE_INSTALL_PREFIX="$DESTDIR" -DCMAKE_INSTALL_LIBDIR="$DESTDIR/lib/$MULTILIBDIR" \
+-DCMAKE_BUILD_TYPE="$BUILDTYPE" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+-B tmpbuild -G Ninja -Wno-dev -Wno-deprecated -Wno-error -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+-DRAPIDJSON_BUILD_TESTS=OFF
 
 ## BUILD
-cmake --build ./tmpbuild --config Release --target all -j`nproc 2>/dev/null || getconf NPROCESSORS_CONF`
+ninja -C tmpbuild
 
 ## INSTALL
-sudo cmake --install ./tmpbuild
+sudo ninja -C tmpbuild install
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

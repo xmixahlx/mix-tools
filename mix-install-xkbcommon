@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-install-xkbcommon
-### Version: v0.20250511.2300
+### Version: v0.20250809.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -66,7 +66,8 @@ git submodule update --init --recursive --depth=1
 rm -Rf tmpbuild
 
 ## CONFIGURE
-meson setup tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype=release
+meson setup tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --buildtype=release \
+-Denable-docs=true -Denable-cool-uris=true
 
 ## BUILD
 ninja -C tmpbuild

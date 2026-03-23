@@ -1,54 +1,62 @@
 #!/bin/sh
 
 ### Package: mix-install-xcb-errors
-### Version: v20240531.2300
+### Version: v0.20250809.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 ### Script Conflicts: (none)
 
-## OVERRIDES
-# MIXTOOLS
-if [ -z $MIXTOOLSDIR ]; then
+### OVERRIDES
+## MIXTOOLS
+
+if [ -z "$MIXTOOLSDIR" ]; then
  MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
-if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+## GITBRANCH
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
 ## VARS
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=$MIXTOOLSDIR/upstream
-GITURL=https://gitlab.freedesktop.org
-GITREPO=xorg/lib
-GITTREE=libxcb-errors
-PKGDIR=$GITTREE\_$GITBRANCH
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://gitlab.freedesktop.org"
+GITREPO="xorg/lib"
+GITTREE="libxcb-errors"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## DEPS
 # Provide INSTALLDEPS=debian to install dependencies.
-if [ $INSTALLDEPS = debian ]; then
- sudo apt-get -y install build-essential coreutils libc-bin git meson
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
 fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --recursive --depth=1 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
 git reset --hard
 git pull
@@ -59,7 +67,7 @@ rm -Rf tmpbuild
 
 ## CONFIGURE
 ./autogen.sh
-./configure --prefix=/usr/local --libdir=/usr/local/lib/x86_64-linux-gnu
+./configure --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --enable-pic
 
 ## BUILD
 make -j `nproc`
@@ -69,6 +77,7 @@ sudo make install
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

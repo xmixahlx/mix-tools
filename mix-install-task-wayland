@@ -9,8 +9,8 @@
 ## ENVIRONMENT
 # MIXTOOLSDIR
 if [ -z "$MIXTOOLSDIR" ]; then
- export MIXTOOLSDIR="`pwd`"
- export PATH="$MIXTOOLSDIR":"$PATH"
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
 fi
 
 ## INSTALL
@@ -20,8 +20,6 @@ mix-install-wlroots
 mix-install-weston
 # waybar depends on libiniparser and cava
 mix-install-libiniparser
-# cava broken with lto
-CFLAGS="$GNUCFLAGSNOLTO" CXXFLAGS="$GNUCFLAGSNOLTO" CPPFLAGS="$GNUCFLAGSNOLTO" \
 mix-install-cava
 mix-install-waybar
 mix-install-wlogout
@@ -33,6 +31,7 @@ mix-install-slurp
 mix-install-mako
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

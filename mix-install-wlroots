@@ -30,7 +30,6 @@ echo "*** GITBRANCH selected is $GITBRANCH."
 RESDIR=$MIXTOOLSDIR/resources
 DEVDIR=$MIXTOOLSDIR/upstream
 GITURL=https://gitlab.freedesktop.org
-#GITURL=git://gitlab.freedesktop.org
 GITREPO=wlroots
 GITTREE=wlroots
 PKGDIR=$GITTREE\_$GITBRANCH

@@ -1,0 +1,94 @@
+#!/bin/sh
+
+### Package: mix-install-libdecor
+### Version: v0.20260118.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### OVERRIDES
+
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+
+## GITBRANCH
+# Upstream branch is "main".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## GITDEPTH
+if [ -z "$GITDEPTH" ]; then
+ GITDEPTH="100"
+fi
+echo "*** GITDEPTH selected is $GITDEPTH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://gitlab.freedesktop.org"
+GITREPO="libdecor"
+GITTREE="libdecor"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## INSTALLDEPS
+# Debian Dependencies
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git meson ninja-build
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## CLEAN
+rm -Rf "$PKGDIR/tmpbuild"
+
+## GIT
+if [ ! -d "$PKGDIR" ];then
+  git clone --depth="$GITDEPTH" --recursive "$GITURL/$GITREPO/$GITTREE.git" \
+  --branch="$GITBRANCH" "$PKGDIR"
+fi
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --depth="$GITDEPTH" --recursive
+
+## CONFIGURE
+meson setup tmpbuild --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" \
+--buildtype="$BUILDTYPE"
+
+## BUILD
+ninja -C tmpbuild
+
+## INSTALL
+sudo ninja -C tmpbuild install
+sudo ldconfig
+
+## EXIT
+echo "*** Done."
+exit

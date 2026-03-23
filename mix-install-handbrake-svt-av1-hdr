@@ -1,0 +1,126 @@
+#!/bin/sh
+
+### Package: mix-install-handbrake-svt-av1-hdr
+### Version: v0.20260210.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: pipewire
+
+### OVERRIDES
+
+## MIXTOOLSDIR
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
+fi
+echo "*** INSTALLDEPS selected is $INSTALLDEPS."
+
+## GITBRANCH
+# Upstream branch is "main".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="main"
+fi
+echo "*** GITBRANCH selected is $GITBRANCH."
+
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## BUILDTYPE
+if [ -z "$BUILDTYPE" ]; then
+ BUILDTYPE="release"
+fi
+echo "*** BUILDTYPE selected is $BUILDTYPE."
+
+## COMPILEROVERRIDE
+# Default
+if [ -z "$COMPILEROVERRIDE" ]; then
+ COMPILEROVERRIDE="OFF"
+fi
+# Check
+if [ "$COMPILEROVERRIDE" = "ON" ]; then
+ CC="$CCSTABLE"
+ CPP="$CPPSTABLE"
+ CXX="$CXXSTABLE"
+ CFLAGS="$CFLAGSBASIC"
+ CPPFLAGS="$CPPFLAGSBASIC"
+ CXXFLAGS="$CXXFLAGSBASIC"
+ LD="$LDDEFAULT"
+ LDFLAGS="$LDFLAGSDEFAULT"
+else
+ COMPILEROVERRIDE="OFF"
+fi
+echo "*** COMPILEROVERRIDE selected is $COMPILEROVERRIDE."
+
+## HBGITBRANCH
+# Upstream branch is "master".
+if [ -z "$HBGITBRANCH" ]; then
+ HBGITBRANCH="master"
+fi
+echo "*** HBGITBRANCH selected is $HBGITBRANCH."
+
+## VARS
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="uranite"
+GITTREE="handbrake-svt-av1-hdr"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
+
+## DEPS
+# Provide INSTALLDEPS=debian to install dependencies.
+if [ "$INSTALLDEPS" = "debian" ]; then
+ sudo apt-get -y install build-essential coreutils libc-bin git
+fi
+
+## PREP
+set -e
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
+
+## CLEAN
+rm -Rf "$PKGDIR/HandBrake"
+
+## GIT
+[ -d "$PKGDIR" ] || git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
+git clean -dfx
+git reset --hard
+git pull
+git submodule update --init --depth=100
+
+## HandBrake
+git clone https://github.com/handbrake/handbrake.git --branch="$HBGITBRANCH" HandBrake
+
+## PATCH
+./patch.sh
+
+## CONFIGURE
+cd HandBrake
+./configure --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" --cpu=native --lto=on --enable-gtk \
+--enable-x265 --enable-numa --enable-fdk-aac --enable-nvenc --enable-nvdec --enable-qsv --enable-vce \
+--enable-libdovi
+
+## BUILD
+cd build
+make -j `nproc`
+
+## INSTALL
+sudo make install
+[ -f "$DESTDIR/bin/handbrake-gtk" ] || sudo ln -s "$DESTDIR/bin/ghb" "$DESTDIR/bin/handbrake-gtk"
+sudo ldconfig
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

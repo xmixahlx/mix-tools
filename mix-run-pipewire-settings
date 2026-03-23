@@ -1,0 +1,85 @@
+#!/bin/sh
+
+### Package: mix-run-pipewire-settings
+### Version: v0.20260322.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+### Requires: pipewire
+
+### VARIABLES
+
+## PRESET
+# Default
+if [ -z "$PRESET" ]; then
+ PRESET="48K"
+fi
+# 44K
+if [ "$PRESET" = "44K" ]; then
+ if [ -z "$PWRATE" ]; then
+  PWRATE="44100"
+ fi
+ if [ -z "$PWALLOWEDRATES" ]; then
+  PWALLOWEDRATES="44100"
+ fi
+ if [ -z "$PWQUANTUM" ]; then
+  PWQUANTUM="64"
+ fi
+fi
+# 48K
+if [ "$PRESET" = "48K" ]; then
+ if [ -z "$PWRATE" ]; then
+  PWRATE="48000"
+ fi
+ if [ -z "$PWALLOWEDRATES" ]; then
+  PWALLOWEDRATES="44100,48000"
+ fi
+ if [ -z "$PWQUANTUM" ]; then
+  PWQUANTUM="64"
+ fi
+fi
+# 96K
+if [ "$PRESET" = "96K" ]; then
+ if [ -z "$PWRATE" ]; then
+  PWRATE="96000"
+ fi
+ if [ -z "$PWALLOWEDRATES" ]; then
+  PWALLOWEDRATES="44100,48000,96000"
+ fi
+ if [ -z "$PWQUANTUM" ]; then
+  PWQUANTUM="128"
+ fi
+fi
+# 192K
+if [ "$PRESET" = "192K" ]; then
+ if [ -z "$PWRATE" ]; then
+  PWRATE="192000"
+ fi
+ if [ -z "$PWALLOWEDRATES" ]; then
+  PWALLOWEDRATES="44100,48000,96000,192000"
+ fi
+ if [ -z "$PWQUANTUM" ]; then
+  PWQUANTUM="256"
+ fi
+fi
+# ECHO
+echo "*** PRESET = $PRESET"
+echo "*** PWRATE = $PWRATE"
+echo "*** PWALLOWEDRATES = $PWALLOWEDRATES"
+echo "*** PWQUANTUM = $PWQUANTUM"
+
+### RUN
+
+pw-metadata -n settings 0 clock.rate "$PWRATE"
+pw-metadata -n settings 0 clock.allowed-rates "$PWALLOWEDRATES"
+pw-metadata -n settings 0 clock.quantum "$PWQUANTUM"
+pw-metadata -n settings 0 clock.min-quantum "$PWQUANTUM"
+pw-metadata -n settings 0 clock.max-quantum "$PWQUANTUM"
+pw-metadata -n settings 0 clock.force-quantum "$PWQUANTUM"
+pw-metadata -n settings 0 clock.force-rate "$PWRATE"
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

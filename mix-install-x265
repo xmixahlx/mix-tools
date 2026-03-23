@@ -30,20 +30,19 @@ if [ -z $DESTDIR ]; then
 fi
 echo "*** DESTDIR selected is $DESTDIR."
 
-# CC
-# Does not support ccache or gcc-14
-CC="gcc-14"
-echo "*** CC selected is $CC."
-
-# CXX
-# Does not support ccache or gcc-14
-CXX="g++-14"
-echo "*** CXX selected is $CXX."
-
-# CPP
-# Does not support ccache or gcc-14
-CPP="g++-14 -E"
-echo "*** CXX selected is $CXX."
+## COMPILEROVERRIDE
+if [ -z "$COMPILEROVERRIDE" ]; then
+ COMPILEROVERRIDE="ON"
+fi
+if [ "$COMPILEROVERRIDE" = "ON" ]; then
+ CC="gcc-14"
+ CXX="g++-14"
+ CPP="g++-14 -E"
+ echo "*** CC selected is $CC."
+ echo "*** CXX selected is $CXX."
+ echo "*** CPP selected is $CPP."
+fi
+echo "*** COMPILEROVERRIDE selected is $COMPILEROVERRIDE."
 
 ## VARS
 RESDIR=$MIXTOOLSDIR/resources

@@ -1,0 +1,65 @@
+#!/bin/sh
+
+### Package: mix-config-btrfs-convert-dup
+### Version: v0.20250629.2300
+### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
+### License: GPLv3
+### Script Dependencies: (none)
+
+### VARIABLES
+
+## PROCESSROOT
+# Options are enabled or disabled
+if [ -z "$PROCESSROOT" ]; then
+ PROCESSROOT="enabled"
+fi
+echo "*** PROCESSROOT is $PROCESSROOT."
+
+## PROCESSHOME
+# Options are enabled or disabled
+if [ -z "$PROCESSHOME" ]; then
+ PROCESSHOME="enabled"
+fi
+echo "*** PROCESSHOME is $PROCESSHOME."
+
+## ENV
+set -e
+
+## STOP SERVICES
+sudo systemctl stop btrfsmaintenance-refresh
+sudo systemctl stop snapperd
+
+## PROCESS ROOT
+if [ "$PROCESSROOT" = "enabled" ]; then
+ echo "*** Processing / (root) btrfs subvolume."
+ ## BTRFS
+ echo "*** File system data before to conversion:"
+ sudo btrfs filesystem df /
+ echo "*** Conversion."
+ sudo btrfs balance start -v -f --enqueue -mconvert=DUP -sconvert=DUP /
+ echo "*** File system data after to conversion:"
+ sudo btrfs filesystem df /
+fi
+
+## PROCESS HOME
+if [ "$PROCESSHOME" = "enabled" ]; then
+ echo "*** Processing /home btrfs subvolume."
+ # BTRFS
+ echo "*** File system data before to conversion:"
+ sudo btrfs filesystem df /home
+ echo "*** Conversion."
+ sudo btrfs balance start -v -f --enqueue -mconvert=DUP -sconvert=DUP /home
+ echo "*** File system data after to conversion:"
+ sudo btrfs filesystem df /home
+fi
+
+## START SERVICES
+echo "*** Restarting system services."
+sudo systemctl restart btrfsmaintenance-refresh
+sudo systemctl restart snapperd
+
+## EXIT
+echo "*** Done."
+exit
+
+## ENJOY

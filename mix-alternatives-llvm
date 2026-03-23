@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### Package: mix-alternatives-llvm
-### Version: v0.20250629.2300
+### Version: v0.20260219.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
@@ -28,7 +28,7 @@ echo "*** DEBIANREPO selected is $DEBIANREPO."
 
 # PKGVER
 if [ -z $PKGVER ]; then
- PKGVER=21
+ PKGVER=23
 fi
 echo "*** PKGVER selected is $PKGVER."
 
@@ -37,7 +37,7 @@ echo "*** PKGVER selected is $PKGVER."
 if [ $INSTALLDEPS = debian ]; then
  sudo apt-get -y install build-essential coreutils libc-bin
  sudo apt-get -y -t $DEBIANREPO install llvm-$PKGVER llvm-$PKGVER-dev \
- libomp-$PKGVER-dev
+ libomp-$PKGVER-dev liblld-$PKGVER-dev
 fi
 
 ## INSTALL
@@ -50,6 +50,8 @@ if [ $INSTALLDEPS = debian ]; then
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-19 19
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-20 20
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-21 21
+ sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-22 22
+ sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-23 23
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /opt/rocm-current/llvm/bin/llvm-config 990
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /opt/llvm-current/bin/llvm-config 997
  sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/local/llvm-upstream/bin/llvm-config 998

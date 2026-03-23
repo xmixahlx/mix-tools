@@ -1,44 +1,72 @@
 #!/bin/sh
 
 ### Package: mix-install-guitarix
-### Version: v20240811.2300
+### Version: v0.20251114.2300
 ### Author: Michael Gan "xmixahlx" michaelbgan@gmail.com
 ### License: GPLv3
 ### Script Dependencies: (none)
 
-## OVERRIDES
-# MIXTOOLSDIR
-if [ -z $MIXTOOLSDIR ]; then
- MIXTOOLSDIR="`pwd`"
- PATH=$MIXTOOLSDIR:$PATH
-fi
-echo "*** MIXTOOLSDIR selected is $MIXTOOLSDIR."
+### OVERRIDES
 
-# INSTALLDEPS
-if [ -z $INSTALLDEPS ]; then
- INSTALLDEPS=debian
+## MIXTOOLS
+if [ -z "$MIXTOOLSDIR" ]; then
+ MIXTOOLSDIR="`pwd`"
+ PATH="$MIXTOOLSDIR:$PATH"
+fi
+
+## INSTALLDEPS
+if [ -z "$INSTALLDEPS" ]; then
+ INSTALLDEPS="debian"
 fi
 echo "*** INSTALLDEPS selected is $INSTALLDEPS."
 
-# GITBRANCH
-if [ -z $GITBRANCH ]; then
- GITBRANCH=master
+## GITBRANCH
+# Upstream branch is "master".
+if [ -z "$GITBRANCH" ]; then
+ GITBRANCH="master"
 fi
 echo "*** GITBRANCH selected is $GITBRANCH."
 
+## DESTDIR
+if [ -z "$DESTDIR" ]; then
+ DESTDIR="/usr/local"
+fi
+echo "*** DESTDIR selected is $DESTDIR."
+
+## COMPILEROVERRIDE
+# Broken with lto and mold
+# Default
+if [ -z "$COMPILEROVERRIDE" ]; then
+ COMPILEROVERRIDE="ON"
+fi
+# Check
+if [ "$COMPILEROVERRIDE" = "ON" ]; then
+ CC="$CCDEFAULT"
+ CXX="$CXXDEFAULT"
+ CPP="$CPPDEFAULT"
+ CFLAGS="$CFLAGSBASIC"
+ CXXFLAGS="$CXXFLAGSBASIC"
+ CPPFLAGS="$CPPFLAGSBASIC"
+ RUSTFLAGS="$RUSTFLAGSBASIC"
+ LD="$LDBASIC"
+ LDFLAGS="$LDFLAGSBASIC"
+else
+ COMPILEROVERRIDE="OFF"
+fi
+echo "*** COMPILEROVERRIDE selected is $COMPILEROVERRIDE."
+
 ## VARS
-RESDIR=$MIXTOOLSDIR/resources
-DEVDIR=$MIXTOOLSDIR/upstream
-DESTDIR=/usr/local
-MULTILIBDIR=`gcc -dumpmachine`
-GITURL=https://github.com
-GITREPO=brummer10
-GITTREE=guitarix
-PKGDIR=$GITTREE\_$GITBRANCH
+RESDIR="$MIXTOOLSDIR/resources"
+DEVDIR="$MIXTOOLSDIR/upstream"
+GITURL="https://github.com"
+GITREPO="brummer10"
+GITTREE="guitarix"
+PKGDIR="$GITTREE-$GITBRANCH"
+MULTILIBDIR="`gcc -dumpmachine`"
 
 ## DEPS
 # Provide INSTALLDEPS=debian to install dependencies.
-if [ $INSTALLDEPS = debian ]; then
+if [ "$INSTALLDEPS" = "debian" ]; then
  sudo apt-get -y build-dep guitarix
  sudo apt-get -y install build-essential coreutils libc-bin git meson \
  faust liblo-dev
@@ -46,24 +74,24 @@ fi
 
 ## PREP
 set -e
-mkdir -p $DEVDIR
-cd $DEVDIR
+mkdir -p "$DEVDIR"
+cd "$DEVDIR"
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITURL/$GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
-cd $PKGDIR
+[ -d "$PKGDIR" ] || git clone --recursive --depth=100 "$GITURL/$GITREPO/$GITTREE.git" --branch="$GITBRANCH" "$PKGDIR"
+cd "$PKGDIR"
 git clean -dfx
 git reset --hard
 git pull
-git submodule update --init --recursive --depth=1
+git submodule update --init --recursive --depth=100
 
 ## BUILDDIR
 cd trunk
 
 ## CONFIGURE
-./waf configure --prefix=$DESTDIR --libdir=$DESTDIR/lib/$MULTILIBDIR \
+./waf configure --prefix="$DESTDIR" --libdir="$DESTDIR/lib/$MULTILIBDIR" \
 --optimization --enable-lfs --enable-nls --shared-lib --lib-dev \
---includeresampler --includeconvolver --mod-lv2 \
+--includeresampler --includeconvolver --convolver-ffmpeg --mod-lv2 \
 --jack-session
 
 ## BUILD
@@ -74,6 +102,7 @@ sudo ./waf install
 sudo ldconfig
 
 ## EXIT
+echo "*** Done."
 exit
 
 ## ENJOY

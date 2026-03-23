@@ -1,0 +1,13 @@
+diff --git a/Auto-Boost-Essential/Auto-Boost-Essential.py b/Auto-Boost-Essential/Auto-Boost-Essential.py
+index d93b9b4..9cb6ee2 100644
+--- a/Auto-Boost-Essential/Auto-Boost-Essential.py
++++ b/Auto-Boost-Essential/Auto-Boost-Essential.py
+@@ -839,7 +839,7 @@ def calculate_ssimu2() -> None:
+         result = core.vszip.Metrics(cut_source_clip, cut_encoded_clip, mode=0)
+     else:
+         try:
+-            result = core.vship.SSIMULACRA2(cut_source_clip, cut_encoded_clip)
++            result = core.vship.SSIMULACRA2(cut_source_clip, cut_encoded_clip, numStream=3)
+         except:
+             console.print(f"[yellow]Vship not found or available, defaulting to vs-zip.")
+             try:

@@ -52,12 +52,12 @@ cd $DEVDIR
 sudo rm -Rf $PKGDIR/tmpbuild
 
 ## GIT
-[ -d $PKGDIR ] || git clone --recursive --depth=1 $GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
+[ -d $PKGDIR ] || git clone --recursive --depth=1000 $GITREPO/$GITTREE.git --branch=$GITBRANCH $PKGDIR
 cd $PKGDIR
 git clean -dfx
 git reset --hard
 git pull
-git submodule update --init --recursive --depth=1
+git submodule update --init --recursive --depth=1000
 
 
 ## PATCH
@@ -65,7 +65,7 @@ sed -i 's/werror=true/werror=false/' meson.build
 
 ## CONFIGURE
 meson tmpbuild --buildtype=release --prefix=/usr/local --libdir=/usr/local/lib/x86_64-linux-gnu \
--Ddocumentation=enabled -Dgstreamer=enabled -Dv4l2=true -Dpycamera=enabled
+-Ddocumentation=disabled -Dgstreamer=enabled -Dv4l2=true -Dpycamera=enabled
 
 ## BUILD
 ninja -C tmpbuild
